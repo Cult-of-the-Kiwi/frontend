@@ -15,6 +15,7 @@ export default [
             "dist/**",
             "build/**",
             "**/*.html",
+            ".github/**",
             ".angular/**",
         ],
     },
