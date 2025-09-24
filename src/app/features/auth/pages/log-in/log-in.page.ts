@@ -3,8 +3,10 @@ import { ReactiveFormsModule, FormBuilder, Validators } from "@angular/forms";
 import { HttpClient } from "@angular/common/http";
 import { Router } from "@angular/router";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { ErrorService } from "../../../../core/services/error-service";
-import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../core/services/request-service";
 
 const context = "login";
 @Component({
@@ -18,7 +20,7 @@ export class LogInPage {
     private http = inject(HttpClient);
     private router = inject(Router);
 
-    constructor(private errorsMap: ErrorService) {}
+    constructor(private requestService: RequestService) {}
 
     readonly logInForm = this.fb.group({
         username: ["", Validators.required],
@@ -29,7 +31,7 @@ export class LogInPage {
         initialValue: this.logInForm.valid ? "VALID" : "INVALID",
     });
 
-    onSubmitLogIn(): void {
+    async onSubmitLogIn(): Promise<void> {
         if (!this.logInForm.valid) {
             console.warn("Fill the form correctly");
             return;
@@ -37,41 +39,39 @@ export class LogInPage {
 
         const { username, password } = this.logInForm.value;
 
-        this.http
-            .post<{
+        try {
+            const data = await this.requestService.makeRequest<{
                 token: string;
                 username: string;
                 email: string;
                 telephone?: string;
                 user_id: string;
-            }>(SERVER_ROUTE + "/api/auth/login", {
-                username,
-                password,
-            })
-            .subscribe({
-                next: (data) => {
-                    console.log(data);
-                    if (data.username) {
-                        localStorage.setItem(
-                            "user",
-                            JSON.stringify({
-                                username: data.username,
-                                email: data.email,
-                                telephone: data.telephone || null,
-                                user_id: data.user_id,
-                            }),
-                        );
-                    }
-                    if (data.token) {
-                        localStorage.setItem("token", data.token);
-                    }
-                    this.router.navigate(["/main-menu"]);
-                },
-                error: (error) => {
-                    console.error(
-                        this.errorsMap.getErrorMessage(context, error),
-                    );
-                },
-            });
+            }>(
+                "auth/login",
+                HttpMethod.POST,
+                { username, password },
+                undefined,
+                context,
+            );
+            if (data.username) {
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                        username: data.username,
+                        email: data.email,
+                        telephone: data.telephone || null,
+                        user_id: data.user_id,
+                    }),
+                );
+            }
+
+            if (data.token) {
+                localStorage.setItem("token", data.token);
+            }
+            this.router.navigate(["/main-menu"]);
+        } catch (error) {
+            //I don't think here I should do anything, but idk
+            console.log(error);
+        }
     }
 }

@@ -6,7 +6,6 @@ import { UserComponent } from "../components/user/user.component";
 
 @Component({
     selector: "main-menu",
-    standalone: true,
     imports: [BubbleContainer, UserComponent, GroupCreationComponent],
     templateUrl: "./main-menu.page.html",
 })
