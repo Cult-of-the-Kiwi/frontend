@@ -3,11 +3,12 @@ import { GroupCreationComponent } from "../components/group-creation/group-creat
 import { NotificationService } from "../../../core/services/notification-service";
 import { BubbleContainer } from "../components/bubble-container/bubble-container.component";
 import { UserComponent } from "../components/user/user.component";
+import { MessageComponent } from "../../chat/message/message.component";
 
 @Component({
     selector: "main-menu",
     standalone: true,
-    imports: [BubbleContainer, UserComponent, GroupCreationComponent],
+    imports: [BubbleContainer, UserComponent, GroupCreationComponent, MessageComponent],
     templateUrl: "./main-menu.page.html",
 })
 export class MainMenuPage {
@@ -15,6 +16,8 @@ export class MainMenuPage {
     constructor(private notificationService: NotificationService) {}
     @ViewChild(BubbleContainer)
     bubbleContainer!: BubbleContainer;
+    @ViewChild(MessageComponent) 
+    chatComponent!: MessageComponent;
 
     addGroup(groupId: string): void {
         this.bubbleContainer.addBubble(groupId);

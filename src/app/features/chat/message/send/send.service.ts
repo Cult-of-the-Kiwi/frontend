@@ -9,7 +9,7 @@ export class SendService {
     private ws!: WebSocketService<MessageFormat>;
     private channelId = "b9889189-6940-4176-943f-98384f7015e9"; // hardcodeada
     private isMessage = true; 
-
+    
     message = new Subject<MessageFormat>();
     open = new Subject<void>();
     cerrar = new Subject<void>();//esta en español porque en inglés se me pone en rojo...(será nombre reservado)
@@ -34,6 +34,7 @@ export class SendService {
             console.error("Catastrofe!! Error al enviar:", err);
         },
       },
+        undefined,//preguntar, aquí van protocols realmente, pero por ahora es ajeno a mi conocimiento
       {
         isMessage: this.isMessage,
         channelId: this.channelId
@@ -50,7 +51,7 @@ export class SendService {
     this.ws.send(mensajito);
   }
 
-  close() {
-    this.ws?.close();
+    close() {
+        this.ws?.close();
   }
 }

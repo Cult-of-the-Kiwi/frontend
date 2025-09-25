@@ -46,11 +46,15 @@ export class WebSocketService<T> {
     private readonly onClose?: CloseCallback;
     private readonly onMessage?: MessageCallback<T>;
     private readonly onError?: ErrorCallback;
+    private isMessage:boolean;
+    private channelId?: string; //sin la interrogación peta, al otro no le hacía falta 
 
     constructor(
         extension: string,
         callbacks?: WebSocketCallbacks<T>,
         protocols?: string | string[],
+        options?: { isMessage?: boolean, channelId?: string }
+
     ) {
         this.extension = extension;
 
@@ -58,10 +62,15 @@ export class WebSocketService<T> {
         this.onClose = callbacks?.onClose;
         this.onMessage = callbacks?.onMessage;
         this.onError = callbacks?.onError;
-
+        this.isMessage = options?.isMessage ?? false;
+        this.channelId = options?.channelId;
         this.connectWebSocket(protocols);
     }
-
+    public close(){
+        if (this.socket && this.socket.readyState===WebSocket.OPEN){
+            this.socket.close();
+        }
+    }
     private startKeepAlive() {
         this.keepAliveInterval = setInterval(() => {
             if (this.socket.readyState === WebSocket.OPEN)
@@ -95,7 +104,13 @@ export class WebSocketService<T> {
 
     private connectWebSocket(protocols?: string | string[]) {
         const wsUrl = SERVER_ROUTE + this.extension;
-        this.socket = new WebSocket(wsUrl, protocols);
+        const token = localStorage.getItem("token"); 
+        if (!token) return; //PARA MARCELO=>O pones esto o el compilador se enfada :)
+        if (this.isMessage && this.channelId) {
+            this.socket = new WebSocket(wsUrl, [token, this.channelId]);
+        } else {
+            this.socket = new WebSocket(wsUrl, [token]);
+        }
 
         this.socket.onopen = () => {
             //This is just for debugging

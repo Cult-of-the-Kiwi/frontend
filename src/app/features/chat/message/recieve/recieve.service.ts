@@ -9,17 +9,18 @@ export interface MessageFormat  {
   channel_id?: string;
   info?: Record<string, string>; 
   created_at?: string;
+  type?:string;
 }
 
 @Injectable({providedIn: 'root' })
     
-export class MessageHistoryService {
+export class RecieveService {
   constructor(private http: HttpClient) {}
 
 getMessages(channelId: string) {
     const from=0;
     const to=50;
-    return this.http.get<MessageFormat>(
+    return this.http.get<MessageFormat[]>(//solo podía devolver un mensaje...jeje (hace falta lista)
         `${SERVER_ROUTE}/api/message/${channelId}?from=${from}&to=${to}`,
         {
             headers: { Authorization: `Bearer ${localStorage.getItem("token")}` }
