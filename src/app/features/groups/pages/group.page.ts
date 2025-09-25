@@ -5,15 +5,17 @@ import { AddUserComponent } from "../components/add-user/add-user.component";
 import { CommonModule } from "@angular/common";
 import { CallButtonComponent } from "../components/call-button/call-button.component";
 import { RemoveUserComponent } from "../components/remove-user/remove-user.component";
-
+import { MessageComponent } from "../../chat/message/message.component";
 //TODO: @AlexGarciaPrada make it dialog
 @Component({
     selector: "group",
+    standalone:true,
     imports: [
         MemberListComponent,
         RemoveUserComponent,
         AddUserComponent,
-        CommonModule,
+        CommonModule, 
+        MessageComponent,
         CallButtonComponent,
     ],
     templateUrl: "./group.page.html",
