@@ -1,12 +1,29 @@
 import { Component, inject } from "@angular/core";
 import { ReactiveFormsModule, FormBuilder, Validators } from "@angular/forms";
-import { HttpClient } from "@angular/common/http";
 import { Router } from "@angular/router";
-import { ErrorService } from "../../../../core/services/error-service";
-import { RegisterResponseType } from "../../../../../types/Auth";
-import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../core/services/request-service";
 
 const context = "register";
+
+//TODO: @AlexGarciaPrada Redo this forms also to avoid this null|undefined stuff
+
+interface requestBody {
+    username: string | null | undefined;
+    email: string | null | undefined;
+    password: string | null | undefined;
+    telephone?: string | null | undefined;
+}
+
+interface requestResponse {
+    token: string;
+    username: string;
+    email: string;
+    telephone?: string;
+    user_id: string;
+}
 
 @Component({
     selector: "register",
@@ -16,10 +33,9 @@ const context = "register";
 })
 export class RegisterPage {
     private fb = inject(FormBuilder);
-    private http = inject(HttpClient);
     private router = inject(Router);
 
-    constructor(private errorsMap: ErrorService) {}
+    constructor(private requestService: RequestService) {}
 
     registerForm = this.fb.group({
         username: ["", Validators.required],
@@ -28,49 +44,38 @@ export class RegisterPage {
         telephone: [""],
     });
 
-    onSubmit(): void {
-        if (!this.registerForm.valid) {
-            // This could be more clarifier
-            console.warn("Fill the form correctly");
-            return;
-        }
+    async onSubmit(): Promise<void> {
+        if (!this.registerForm.valid) return;
 
         const { username, email, password, telephone } =
             this.registerForm.value;
 
-        this.http
-            .post<RegisterResponseType>(SERVER_ROUTE + "/api/auth/register", {
+        try {
+            const data = await this.requestService.makeRequest<
+                requestResponse,
+                requestBody
+            >("auth/register", HttpMethod.POST, context, {
                 username,
                 email,
                 password,
                 telephone,
-            })
-            .subscribe({
-                next: (data) => {
-                    localStorage.setItem(
-                        "user",
-                        JSON.stringify({
-                            username,
-                            email,
-                            telephone,
-                            user_id: data.user_id,
-                        }),
-                    );
-
-                    if (data.token) {
-                        localStorage.setItem("token", data.token);
-                    }
-
-                    console.log("Register succesfully:", data);
-                    this.router.navigate(["/user"]);
-                },
-                error: (error) => {
-                    console.error(
-                        this.errorsMap.getErrorMessage(context, error),
-                    );
-                },
             });
 
-        console.log("Data sent:", this.registerForm.value);
+            if (data.username && data.token) {
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                        username: data.username,
+                        email: data.email,
+                        telephone: data.telephone || null,
+                        user_id: data.user_id,
+                    }),
+                );
+                localStorage.setItem("token", data.token);
+                this.router.navigate(["/main-menu"]);
+            }
+        } catch (error) {
+            console.error(error);
+        }
     }
 }
