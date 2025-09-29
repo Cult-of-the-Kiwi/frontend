@@ -11,7 +11,7 @@ export class ErrorService {
     constructor(private http: HttpClient) {
         this.loadErrors();
     }
-
+    //I don't think I should use the request service here (circular reference)
     private loadErrors() {
         this.http
             .get<

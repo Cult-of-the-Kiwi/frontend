@@ -61,9 +61,9 @@ export class GroupLoader {
             >(
                 "group/user-groups",
                 HttpMethod.GET,
-                undefined,
-                { Authorization: `Bearer ${token}` },
                 context,
+                undefined, //The body
+                { Authorization: `Bearer ${token}` },
             );
 
             if (data) {

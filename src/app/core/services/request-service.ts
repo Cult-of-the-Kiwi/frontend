@@ -28,9 +28,10 @@ export class RequestService {
         //A shitty way to pass the lint
         extension: string,
         method: HttpMethod,
+        context: string = "",
         body?: B,
         headers?: Record<string, string>,
-        context: string = "",
+        params?: Record<string, string>,
     ): Promise<T> {
         const url = SERVER_ROUTE + "/api/" + extension;
         let httpHeaders = new HttpHeaders({
@@ -43,7 +44,10 @@ export class RequestService {
         //"Let's make a map"
         switch (method) {
             case HttpMethod.GET:
-                request = this.http.get<T>(url, { headers: httpHeaders });
+                request = this.http.get<T>(url, {
+                    headers: httpHeaders,
+                    params,
+                });
                 break;
             case HttpMethod.POST:
                 request = this.http.post<T>(url, body, {

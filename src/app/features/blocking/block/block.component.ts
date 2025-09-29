@@ -6,6 +6,7 @@ import { signal } from "@angular/core";
 import { SERVER_ROUTE } from "../../../../environment/environment.secret";
 import { ErrorService } from "../../../core/services/error-service";
 
+//NEED TO BE REMADE
 //TODO @AlexGarciaPrada: This shouldn't be a page
 const context = "block";
 

@@ -1,6 +1,5 @@
 import { Component, inject } from "@angular/core";
 import { ReactiveFormsModule, FormBuilder, Validators } from "@angular/forms";
-import { HttpClient } from "@angular/common/http";
 import { Router } from "@angular/router";
 import { toSignal } from "@angular/core/rxjs-interop";
 import {
@@ -8,6 +7,19 @@ import {
     RequestService,
 } from "../../../../core/services/request-service";
 
+interface requestResponse {
+    token: string;
+    username: string;
+    email: string;
+    telephone?: string;
+    user_id: string;
+}
+//This null |undefined has to be with the FormControl
+//TODO:@AlexGarciaPrada Redo the form, it's just not good
+interface requestBody {
+    username: string | null | undefined;
+    password: string | null | undefined;
+}
 const context = "login";
 @Component({
     selector: "log-in",
@@ -17,7 +29,6 @@ const context = "login";
 })
 export class LogInPage {
     private fb = inject(FormBuilder);
-    private http = inject(HttpClient);
     private router = inject(Router);
 
     constructor(private requestService: RequestService) {}
@@ -31,7 +42,7 @@ export class LogInPage {
         initialValue: this.logInForm.valid ? "VALID" : "INVALID",
     });
 
-    async onSubmitLogIn(): Promise<void> {
+    async onSubmit(): Promise<void> {
         if (!this.logInForm.valid) {
             console.warn("Fill the form correctly");
             return;
@@ -40,20 +51,11 @@ export class LogInPage {
         const { username, password } = this.logInForm.value;
 
         try {
-            const data = await this.requestService.makeRequest<{
-                token: string;
-                username: string;
-                email: string;
-                telephone?: string;
-                user_id: string;
-            }>(
-                "auth/login",
-                HttpMethod.POST,
-                { username, password },
-                undefined,
-                context,
-            );
-            if (data.username) {
+            const data = await this.requestService.makeRequest<
+                requestResponse,
+                requestBody
+            >("auth/login", HttpMethod.POST, context, { username, password });
+            if (data.username && data.token) {
                 localStorage.setItem(
                     "user",
                     JSON.stringify({
@@ -63,12 +65,9 @@ export class LogInPage {
                         user_id: data.user_id,
                     }),
                 );
-            }
-
-            if (data.token) {
                 localStorage.setItem("token", data.token);
+                this.router.navigate(["/main-menu"]);
             }
-            this.router.navigate(["/main-menu"]);
         } catch (error) {
             //I don't think here I should do anything, but idk
             console.log(error);

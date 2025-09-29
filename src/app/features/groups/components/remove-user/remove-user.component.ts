@@ -3,8 +3,8 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import {
     GroupDialogComponent,
     GroupDialogInterface,
-    HttpMethod,
 } from "../group-dialog/group-dialog.component";
+import { HttpMethod } from "../../../../core/services/request-service";
 
 @Component({
     selector: "remove-user",
