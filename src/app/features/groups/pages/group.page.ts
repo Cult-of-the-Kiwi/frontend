@@ -1,4 +1,4 @@
-import { Component } from "@angular/core";
+import { Component, inject } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { MemberListComponent } from "../components/member-list/member-list.component";
 import { AddUserComponent } from "../components/add-user/add-user.component";
@@ -24,7 +24,8 @@ export class GroupPage {
     groupId!: string;
     membersLoaded = false;
 
-    constructor(private route: ActivatedRoute) {
+    private route = inject(ActivatedRoute);
+    constructor() {
         this.groupId = this.route.snapshot.paramMap.get("groupId")!;
     }
 

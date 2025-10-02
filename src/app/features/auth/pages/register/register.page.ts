@@ -34,8 +34,7 @@ interface requestResponse {
 export class RegisterPage {
     private fb = inject(FormBuilder);
     private router = inject(Router);
-
-    constructor(private requestService: RequestService) {}
+    private requestService = inject(RequestService);
 
     registerForm = this.fb.group({
         username: ["", Validators.required],

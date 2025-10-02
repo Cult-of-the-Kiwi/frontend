@@ -1,4 +1,4 @@
-import { Injectable } from "@angular/core";
+import { inject, Injectable } from "@angular/core";
 import {
     HttpClient,
     HttpErrorResponse,
@@ -19,10 +19,8 @@ export enum HttpMethod {
     providedIn: "root",
 })
 export class RequestService {
-    constructor(
-        private errorService: ErrorService,
-        private http: HttpClient,
-    ) {}
+    private errorService = inject(ErrorService);
+    private http = inject(HttpClient);
 
     async makeRequest<T, B = unknown>(
         //A shitty way to pass the lint
