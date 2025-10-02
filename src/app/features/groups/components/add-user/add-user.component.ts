@@ -1,4 +1,4 @@
-import { Component, Inject, inject, Input, PLATFORM_ID } from "@angular/core";
+import { Component, inject, Input, PLATFORM_ID } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { CommonModule, isPlatformBrowser } from "@angular/common";
 import {
@@ -11,6 +11,7 @@ import {
 } from "../../../../core/services/request-service";
 
 const context = "add-user";
+
 @Component({
     selector: "add-user",
     imports: [CommonModule],
@@ -23,13 +24,12 @@ export class AddUserComponent {
     @Input() groupId!: string;
 
     dialog = inject(MatDialog);
+    private platformId = inject(PLATFORM_ID);
     private requestService = inject(RequestService);
 
     private usernames: string[] = [];
     private friendsIds: string[] = [];
     private notMemberFriends: string[] = [];
-
-    constructor(@Inject(PLATFORM_ID) private platformId: object) {}
 
     async openAddUserDialog() {
         try {
