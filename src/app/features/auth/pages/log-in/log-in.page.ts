@@ -30,8 +30,7 @@ const context = "login";
 export class LogInPage {
     private fb = inject(FormBuilder);
     private router = inject(Router);
-
-    constructor(private requestService: RequestService) {}
+    private requestService = inject(RequestService);
 
     readonly logInForm = this.fb.group({
         username: ["", Validators.required],

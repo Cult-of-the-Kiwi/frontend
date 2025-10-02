@@ -1,6 +1,5 @@
 import { Component } from "@angular/core";
 import { RouterModule } from "@angular/router";
-import { ErrorService } from "./core/services/error-service";
 
 @Component({
     selector: "app-root",
@@ -11,6 +10,4 @@ import { ErrorService } from "./core/services/error-service";
 })
 export class App {
     protected title = "frontend";
-
-    constructor(private errorsMap: ErrorService) {}
 }
