@@ -6,7 +6,7 @@ import { SERVER_ROUTE } from "../../../environment/environment.secret";
 import { ErrorService } from "../../core/services/error-service";
 
 const context = "update";
-
+//TODO: @AlexGarciaPrada Remade this shit. 
 @Component({
     selector: "app-update",
     standalone: true,

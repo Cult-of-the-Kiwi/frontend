@@ -1,11 +1,21 @@
-import { Component, signal } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
+import { Component, inject, signal } from "@angular/core";
 import { FormsModule } from "@angular/forms";
 import { RouterModule, Router } from "@angular/router";
-import { SERVER_ROUTE } from "../../../../environment/environment.secret";
-import { ErrorService } from "../../../core/services/error-service";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../core/services/request-service";
 
 const context = "friendship-request";
+
+export interface FriendshipRequestResponse {
+    success: boolean;
+    message: string;
+}
+
+export interface FriendshipRequestBody {
+    to_user_username: string;
+}
 
 @Component({
     selector: "app-friendship-request",
@@ -17,16 +27,12 @@ const context = "friendship-request";
 export class FriendshipRequestComponent {
     readonly toUserUsername = signal("");
 
-    constructor(
-        private http: HttpClient,
-        private router: Router,
-        private errorsMap: ErrorService,
-    ) {}
+    private requestService = inject(RequestService);
+    private router = inject(Router);
+    constructor() {}
 
-    sendRequest(): void {
-        //The order of the token and user comprobbations are changed, only god knows why
+    async sendRequest(): Promise<void> {
         const username = this.toUserUsername().trim();
-
         if (!username) {
             console.warn("Username can't be empty");
             return;
@@ -38,28 +44,21 @@ export class FriendshipRequestComponent {
             return;
         }
 
-        this.http
-            .post<object>(
-                SERVER_ROUTE + "/api/user/friendship/request",
-                { to_user_username: username },
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                },
-            )
-            .subscribe({
-                next: (data) => {
-                    console.log("Request succesfully sent:", data);
-                    this.toUserUsername.set("");
-                    this.router.navigate(["/user"]);
-                },
-                error: (error) => {
-                    //THIS IS NOT FUNCTIONAL NOT WORKING
-                    console.error(
-                        this.errorsMap.getErrorMessage(context, error),
-                    );
-                },
+        try {
+            const body: FriendshipRequestBody = { to_user_username: username };
+
+            const data = await this.requestService.makeRequest<
+                FriendshipRequestResponse,
+                FriendshipRequestBody
+            >("user/friendship/request", HttpMethod.POST, context, body, {
+                Authorization: `Bearer ${token}`,
             });
+
+            console.log("Request successfully sent:", data);
+            this.toUserUsername.set("");
+            this.router.navigate(["/user"]);
+        } catch (err) {
+            console.log(err);
+        }
     }
 }

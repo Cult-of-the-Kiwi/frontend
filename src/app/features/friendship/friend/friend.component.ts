@@ -1,11 +1,17 @@
-import { Component, Inject, PLATFORM_ID, signal } from "@angular/core";
+import { Component, inject, PLATFORM_ID, signal } from "@angular/core";
 import { isPlatformBrowser, CommonModule } from "@angular/common";
-import { HttpClient, HttpParams } from "@angular/common/http";
-import { SERVER_ROUTE } from "../../../../environment/environment.secret";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../core/services/request-service";
 
-interface FriendList {
+export interface FriendListItem {
     username: string;
     created_at: string;
+}
+
+export interface FriendListResponse {
+    friends: FriendListItem[];
 }
 
 @Component({
@@ -16,58 +22,54 @@ interface FriendList {
     styleUrls: ["./friend.component.scss"],
 })
 export class FriendshipFriendComponent {
-    readonly requests = signal<FriendList[]>([]);
+    readonly requests = signal<FriendListItem[]>([]);
     readonly loading = signal(true);
     readonly error = signal<string | null>(null);
 
-    constructor(
-        private http: HttpClient,
-        @Inject(PLATFORM_ID) private platformId: object,
-    ) {
+    private requestService = inject(RequestService);
+    private platformId = inject(PLATFORM_ID);
+
+    constructor() {
         this.loadFriends();
     }
 
-    loadFriends(): void {
+    async loadFriends(): Promise<void> {
         if (!isPlatformBrowser(this.platformId)) {
             this.loading.set(false);
             return;
         }
 
         const token = localStorage.getItem("token");
-
         if (!token) {
             this.error.set("You're not logged");
-            console.error("There is no token");
             this.loading.set(false);
             return;
         }
 
-        const params = new HttpParams().set("from", "0").set("to", "20");
+        this.loading.set(true);
 
-        this.http
-            .get<FriendList[]>(SERVER_ROUTE + "/api/user/friendship/friends", {
-                headers: { Authorization: `Bearer ${token}` },
-                params,
-            })
-            .subscribe({
-                next: (data) => {
-                    console.log(data);
-                    this.requests.set(
-                        data.map((d) => ({
-                            username: d.username,
-                            created_at: d.created_at,
-                        })),
-                    );
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    console.error("Error with the friend requests:", err);
-                    this.error.set(
-                        `Error loading friends requests: ${err.message || err.status}`,
-                    );
-                    this.loading.set(false);
-                },
-            });
+        try {
+            const response =
+                await this.requestService.makeRequest<FriendListResponse>(
+                    "user/friendship/friends",
+                    HttpMethod.GET,
+                    "Loading friends",
+                    undefined,
+                    { Authorization: `Bearer ${token}` },
+                    { from: "0", to: "20" },
+                );
+
+            this.requests.set(
+                response.friends.map((d) => ({
+                    username: d.username,
+                    created_at: d.created_at,
+                })),
+            );
+
+            this.loading.set(false);
+        } catch (err) {
+            console.log(err);
+        }
     }
 
     isLoading() {

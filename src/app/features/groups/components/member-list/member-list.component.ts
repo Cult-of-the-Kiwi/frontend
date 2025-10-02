@@ -3,15 +3,17 @@ import {
     ChangeDetectorRef,
     Component,
     EventEmitter,
-    Inject,
+    inject,
     Input,
     Output,
     PLATFORM_ID,
 } from "@angular/core";
-import { HttpClient, HttpParams } from "@angular/common/http";
-import { ErrorService } from "../../../../core/services/error-service";
-import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../core/services/request-service";
 
+//TODO: @AlexGarciaPrada Remade with signals
 const context = "member-list";
 
 @Component({
@@ -29,12 +31,9 @@ export class MemberListComponent {
     error: string | null = null;
     members: string[] = [];
 
-    constructor(
-        private http: HttpClient,
-        @Inject(PLATFORM_ID) private platformId: object,
-        private errorsMap: ErrorService,
-        private cdRef: ChangeDetectorRef,
-    ) {}
+    private requestService = inject(RequestService);
+    private platformId = inject(PLATFORM_ID);
+    private cdRef = inject(ChangeDetectorRef);
 
     ngOnChanges() {
         if (this.groupId) {
@@ -42,7 +41,7 @@ export class MemberListComponent {
         }
     }
 
-    loadMembers(): void {
+    async loadMembers(): Promise<void> {
         if (!isPlatformBrowser(this.platformId)) {
             this.loading = false;
             return;
@@ -60,33 +59,23 @@ export class MemberListComponent {
             return;
         }
 
-        const params = new HttpParams().set("from", "0").set("to", "20");
+        try {
+            const data = await this.requestService.makeRequest<string[]>(
+                `group/${this.groupId}/members`,
+                HttpMethod.GET,
+                context,
+                undefined,
+                { Authorization: `Bearer ${token}` },
+                { from: "0", to: "20" },
+            );
 
-        this.http
-            .get<string[]>(
-                SERVER_ROUTE + "/api/group/" + this.groupId + "/members",
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                    params,
-                },
-            )
-            .subscribe({
-                next: (data) => {
-                    this.members = data;
-                    this.loading = false;
-                    this.cdRef.detectChanges();
-                    this.eventMembersLoaded.emit(this.members);
-                },
-                error: (error) => {
-                    console.error(
-                        "Error with the member list requests:",
-                        error,
-                    );
-                    this.errorsMap.getErrorMessage(context, error);
-                    this.error = `Error loading members: ${error.message || error.status}`;
-                    this.loading = false;
-                },
-            });
+            this.members = data;
+            this.loading = false;
+            this.cdRef.detectChanges();
+            this.eventMembersLoaded.emit(this.members);
+        } catch (err) {
+            console.log(err);
+        }
     }
     isLoading(): boolean {
         return this.loading;
