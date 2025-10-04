@@ -5,7 +5,7 @@ import { FormsModule } from "@angular/forms";
 import { SERVER_ROUTE } from "../../../environment/environment.secret";
 import { ErrorService } from "../../core/services/error-service";
 
-const context = "update";
+const errorCtx = "update";
 //TODO: @AlexGarciaPrada Remade this shit.
 @Component({
     selector: "app-update",
@@ -73,7 +73,7 @@ export class UpdateUsernameComponent {
                 },
                 error: (error) => {
                     console.error(
-                        this.errorsMap.getErrorMessage(context, error),
+                        this.errorsMap.getErrorMessage(errorCtx, error),
                     );
                     this.loading.set(false);
                 },

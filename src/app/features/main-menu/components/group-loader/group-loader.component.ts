@@ -12,7 +12,7 @@ import {
     HttpMethod,
 } from "../../../../core/services/request-service";
 
-const context = "user-groups";
+const errorCtx = "user-groups";
 
 @Component({
     selector: "group-loader",
@@ -61,7 +61,7 @@ export class GroupLoader {
             >(
                 "group/user-groups",
                 HttpMethod.GET,
-                context,
+                errorCtx,
                 undefined, //The body
                 { Authorization: `Bearer ${token}` },
             );

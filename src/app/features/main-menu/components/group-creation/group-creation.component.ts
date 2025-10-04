@@ -18,7 +18,7 @@ import {
     RequestService,
 } from "../../../../core/services/request-service";
 
-const context = "group-creation";
+const errorCtx = "group-creation";
 
 //TODO : @AlexGarciaPrada As in add-user this should be done in a more generic way
 @Component({
@@ -73,7 +73,7 @@ export class GroupCreationComponent {
             >(
                 "user/friendship/friends",
                 HttpMethod.GET,
-                context,
+                errorCtx,
                 undefined,
                 { Authorization: `Bearer ${token}` },
                 params,
@@ -101,7 +101,7 @@ export class GroupCreationComponent {
                 users: this.userIds,
                 httpOperation: HttpMethod.POST,
                 finalRoute: "/main-menu",
-                context: "group-creation",
+                errorCtx: "group-creation",
                 jsonField: "member_ids",
             };
 
@@ -134,7 +134,7 @@ export class GroupCreationComponent {
             this.requestService.makeRequest<{ id: string }, undefined>(
                 "user",
                 HttpMethod.GET,
-                context,
+                errorCtx,
                 undefined,
                 { Authorization: `Bearer ${token}` },
                 { user_username: username },

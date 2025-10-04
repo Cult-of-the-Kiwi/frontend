@@ -14,7 +14,7 @@ import {
 } from "../../../../core/services/request-service";
 
 //TODO: @AlexGarciaPrada Remade with signals
-const context = "member-list";
+const errorCtx = "member-list";
 
 @Component({
     selector: "member-list",
@@ -63,7 +63,7 @@ export class MemberListComponent {
             const data = await this.requestService.makeRequest<string[]>(
                 `group/${this.groupId}/members`,
                 HttpMethod.GET,
-                context,
+                errorCtx,
                 undefined,
                 { Authorization: `Bearer ${token}` },
                 { from: "0", to: "20" },

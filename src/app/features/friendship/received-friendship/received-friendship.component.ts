@@ -9,7 +9,7 @@ import {
 
 //TODO: @AlexGarciaPrada This have to be remade entirely
 
-const context = "receive-friendships";
+const errorCtx = "receive-friendships";
 
 interface FriendRequest {
     from_user_username: string;
@@ -75,7 +75,7 @@ export class FriendRequestsComponent {
                 await this.requestService.makeRequest<FriendRequestsResponse>(
                     "user/friendship/received",
                     HttpMethod.GET,
-                    context,
+                    errorCtx,
                     undefined,
                     { Authorization: `Bearer ${token}` },
                     { from: from.toString(), to: to.toString() },
@@ -100,7 +100,7 @@ export class FriendRequestsComponent {
             await this.requestService.makeRequest<object, FriendActionBody>(
                 "user/friendship/accept",
                 HttpMethod.POST,
-                context,
+                errorCtx,
                 body,
                 { Authorization: `Bearer ${token}` },
             );
@@ -122,7 +122,7 @@ export class FriendRequestsComponent {
             await this.requestService.makeRequest<object, FriendActionBody>(
                 "user/friendship/reject",
                 HttpMethod.POST,
-                context,
+                errorCtx,
                 body,
                 { Authorization: `Bearer ${token}` },
             );
