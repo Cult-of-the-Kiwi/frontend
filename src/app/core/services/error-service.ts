@@ -1,5 +1,7 @@
 import { HttpClient, HttpErrorResponse } from "@angular/common/http";
 import { Injectable } from "@angular/core";
+import errorsData from "../../../assets/errors-codes.json";
+
 type ErrorMap = Map<number, string>;
 
 @Injectable({
@@ -11,23 +13,17 @@ export class ErrorService {
     constructor(private http: HttpClient) {
         this.loadErrors();
     }
-    //I don't think I should use the request service here (circular reference)
+
     private loadErrors() {
-        this.http
-            .get<
-                Record<string, Record<string, string>>
-            >("assets/errors-codes.json")
-            .subscribe((data) => {
-                for (const [context, codes] of Object.entries(data)) {
-                    const map = new Map<number, string>();
-                    for (const [code, message] of Object.entries(codes)) {
-                        map.set(Number(code), message);
-                    }
-                    this.errorMaps.set(context, map);
-                }
-            });
+        for (const [errorCtx, codes] of Object.entries(errorsData)) {
+            const map = new Map<number, string>();
+            for (const [code, message] of Object.entries(codes)) {
+                map.set(Number(code), message);
+            }
+            this.errorMaps.set(errorCtx, map);
+        }
     }
-    getErrorMessage(context: string, error: HttpErrorResponse): string {
+    getErrorMessage(errorCtx: string, error: HttpErrorResponse): string {
         const code = error.status;
 
         if (this.errorMaps.size === 0) {
@@ -35,8 +31,8 @@ export class ErrorService {
             return `Unknown error: (${code})`;
         }
 
-        const contextMap = this.errorMaps.get(context);
-        if (contextMap?.has(code)) return contextMap.get(code)!;
+        const errorCtxMap = this.errorMaps.get(errorCtx);
+        if (errorCtxMap?.has(code)) return errorCtxMap.get(code)!;
 
         const defaultMap = this.errorMaps.get("default");
         if (defaultMap?.has(code)) return defaultMap.get(code)!;

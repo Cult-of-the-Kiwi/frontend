@@ -37,7 +37,7 @@ export class RemoveUserComponent {
             httpOperation: HttpMethod.POST,
             uniqueAnswer: true,
             jsonField: "user_id",
-            context: "remove-user",
+            errorCtx: "remove-user",
         };
         const dialogConfig = new MatDialogConfig();
         dialogConfig.width = "500px";

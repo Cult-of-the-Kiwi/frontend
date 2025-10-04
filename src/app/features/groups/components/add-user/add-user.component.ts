@@ -10,7 +10,7 @@ import {
     RequestService,
 } from "../../../../core/services/request-service";
 
-const context = "add-user";
+const errorCtx = "add-user";
 
 @Component({
     selector: "add-user",
@@ -50,7 +50,7 @@ export class AddUserComponent {
             users: this.notMemberFriends,
             httpOperation: HttpMethod.PUT,
             jsonField: "user_ids",
-            context: "add-user",
+            errorCtx: "add-user",
         };
 
         const dialogConfig = new MatDialogConfig();
@@ -78,7 +78,7 @@ export class AddUserComponent {
             >(
                 "user/friendship/friends",
                 HttpMethod.GET,
-                context,
+                errorCtx,
                 undefined,
                 {
                     Authorization: `Bearer ${token}`,
@@ -105,7 +105,7 @@ export class AddUserComponent {
             this.requestService.makeRequest<{ id: string }, undefined>(
                 `user?user_username=${username}`,
                 HttpMethod.GET,
-                context,
+                errorCtx,
                 undefined,
                 { Authorization: `Bearer ${token}` },
             ),

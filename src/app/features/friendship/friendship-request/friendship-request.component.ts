@@ -6,7 +6,7 @@ import {
     RequestService,
 } from "../../../core/services/request-service";
 
-const context = "friendship-request";
+const errorCtx = "friendship-request";
 
 export interface FriendshipRequestResponse {
     success: boolean;
@@ -50,7 +50,7 @@ export class FriendshipRequestComponent {
             const data = await this.requestService.makeRequest<
                 FriendshipRequestResponse,
                 FriendshipRequestBody
-            >("user/friendship/request", HttpMethod.POST, context, body, {
+            >("user/friendship/request", HttpMethod.POST, errorCtx, body, {
                 Authorization: `Bearer ${token}`,
             });
 

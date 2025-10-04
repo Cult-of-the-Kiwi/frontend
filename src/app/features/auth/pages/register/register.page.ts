@@ -6,18 +6,18 @@ import {
     RequestService,
 } from "../../../../core/services/request-service";
 
-const context = "register";
+const errorCtx = "register";
 
 //TODO: @AlexGarciaPrada Redo this forms also to avoid this null|undefined stuff
 
-interface requestBody {
+interface RegisterRequestBody {
     username: string | null | undefined;
     email: string | null | undefined;
     password: string | null | undefined;
     telephone?: string | null | undefined;
 }
 
-interface requestResponse {
+interface RegisterRequestResponse {
     token: string;
     username: string;
     email: string;
@@ -51,9 +51,9 @@ export class RegisterPage {
 
         try {
             const data = await this.requestService.makeRequest<
-                requestResponse,
-                requestBody
-            >("auth/register", HttpMethod.POST, context, {
+                RegisterRequestResponse,
+                RegisterRequestBody
+            >("auth/register", HttpMethod.POST, errorCtx, {
                 username,
                 email,
                 password,

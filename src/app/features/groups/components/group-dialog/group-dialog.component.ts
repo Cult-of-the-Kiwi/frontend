@@ -33,7 +33,7 @@ export interface GroupDialogInterface {
     jsonField: string;
     finalRoute?: string; //In case it doesn't have it is the groupId
     uniqueAnswer?: boolean; // In default is not unique answer, puto Marcelo, pq se borran usuarios de uno en uno
-    context?: string;
+    errorCtx?: string;
     styleUrl?: string;
 }
 @Component({
@@ -87,7 +87,7 @@ export class GroupDialogComponent {
             >(
                 "group/" + this.data.route,
                 this.data.httpOperation,
-                this.data.context ?? "",
+                this.data.errorCtx ?? "",
                 body,
                 { Authorization: `Bearer ${token}` },
             );

@@ -7,7 +7,7 @@ import {
     RequestService,
 } from "../../../../core/services/request-service";
 
-interface requestResponse {
+interface LoginRequestResponse {
     token: string;
     username: string;
     email: string;
@@ -16,11 +16,11 @@ interface requestResponse {
 }
 //This null |undefined has to be with the FormControl
 //TODO:@AlexGarciaPrada Redo the form, it's just not good
-interface requestBody {
+interface LoginRequestBody {
     username: string | null | undefined;
     password: string | null | undefined;
 }
-const context = "login";
+const errorCtx = "login";
 @Component({
     selector: "log-in",
     imports: [ReactiveFormsModule],
@@ -51,9 +51,9 @@ export class LogInPage {
 
         try {
             const data = await this.requestService.makeRequest<
-                requestResponse,
-                requestBody
-            >("auth/login", HttpMethod.POST, context, { username, password });
+                LoginRequestResponse,
+                LoginRequestBody
+            >("auth/login", HttpMethod.POST, errorCtx, { username, password });
             if (data.username && data.token) {
                 localStorage.setItem(
                     "user",

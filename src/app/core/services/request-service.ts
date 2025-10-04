@@ -9,10 +9,10 @@ import { SERVER_ROUTE } from "../../../environment/environment.secret";
 import { ErrorService } from "./error-service";
 
 export enum HttpMethod {
-    GET = "GET",
-    POST = "POST",
-    PUT = "PUT",
-    DELETE = "DELETE",
+    GET,
+    POST,
+    PUT,
+    DELETE,
 }
 
 @Injectable({
@@ -26,7 +26,7 @@ export class RequestService {
         //A shitty way to pass the lint
         extension: string,
         method: HttpMethod,
-        context: string = "",
+        errorCtx: string = "",
         body?: B,
         headers?: Record<string, string>,
         params?: Record<string, string>,
@@ -50,13 +50,20 @@ export class RequestService {
             case HttpMethod.POST:
                 request = this.http.post<T>(url, body, {
                     headers: httpHeaders,
+                    params,
                 });
                 break;
             case HttpMethod.PUT:
-                request = this.http.put<T>(url, body, { headers: httpHeaders });
+                request = this.http.put<T>(url, body, {
+                    headers: httpHeaders,
+                    params,
+                });
                 break;
             case HttpMethod.DELETE:
-                request = this.http.delete<T>(url, { headers: httpHeaders });
+                request = this.http.delete<T>(url, {
+                    headers: httpHeaders,
+                    params,
+                });
                 break;
             default:
                 throw new Error(`HTTP method ${method} not supported`);
@@ -65,8 +72,9 @@ export class RequestService {
             return await firstValueFrom(request);
         } catch (err) {
             const error = err as HttpErrorResponse;
-            this.errorService.getErrorMessage(context, error);
-            throw error;
+            return Promise.reject(
+                this.errorService.getErrorMessage(errorCtx, error),
+            );
         }
     }
 }
