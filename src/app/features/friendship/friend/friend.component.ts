@@ -59,12 +59,7 @@ export class FriendshipFriendComponent {
                     { from: "0", to: "20" },
                 );
 
-            this.requests.set(
-                response.friends.map((d) => ({
-                    username: d.username,
-                    created_at: d.created_at,
-                })),
-            );
+            this.requests.set(response.friends);
 
             this.loading.set(false);
         } catch (err) {
