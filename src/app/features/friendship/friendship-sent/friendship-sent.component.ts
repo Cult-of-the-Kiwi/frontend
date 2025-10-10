@@ -1,12 +1,18 @@
-import { Component, Inject, PLATFORM_ID, signal } from "@angular/core";
+import { Component, inject, PLATFORM_ID, signal } from "@angular/core";
 import { isPlatformBrowser, CommonModule } from "@angular/common";
-import { HttpClient, HttpParams } from "@angular/common/http";
-import { SERVER_ROUTE } from "../../../../environment/environment.secret";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../core/services/request-service";
 
 interface SentRequest {
     to_user_username: string;
     state: "pending" | "accepted" | "rejected";
     created_at: string;
+}
+
+export interface SentRequestsResponse {
+    requests: SentRequest[];
 }
 
 @Component({
@@ -21,55 +27,42 @@ export class FriendshipSentComponent {
     readonly loading = signal(true);
     readonly error = signal<string | null>(null);
 
-    constructor(
-        private http: HttpClient,
-        @Inject(PLATFORM_ID) private platformId: object,
-    ) {
+    private requestService = inject(RequestService);
+    private platformId = inject(PLATFORM_ID);
+    constructor() {
         this.loadSentRequests();
     }
 
-    loadSentRequests(): void {
+    async loadSentRequests(): Promise<void> {
         if (!isPlatformBrowser(this.platformId)) {
             this.loading.set(false);
             return;
         }
 
         const token = localStorage.getItem("token");
-
         if (!token) {
             this.error.set("You're not logged");
-            console.error("No token");
             this.loading.set(false);
             return;
         }
 
-        const params = new HttpParams().set("from", "0").set("to", "20");
+        this.loading.set(true);
 
-        this.http
-            .get<SentRequest[]>(SERVER_ROUTE + "/api/user/friendship/sent", {
-                headers: { Authorization: `Bearer ${token}` },
-                params,
-            })
-            .subscribe({
-                next: (data) => {
-                    console.log(data);
-                    this.requests.set(
-                        data.map((d) => ({
-                            to_user_username: d.to_user_username,
-                            state: d.state,
-                            created_at: d.created_at,
-                        })),
-                    );
-                    this.loading.set(false);
-                },
-                error: (err) => {
-                    console.error("Error making the request:", err);
-                    this.error.set(
-                        `Error loading requests: ${err.message || err.status}`,
-                    );
-                    this.loading.set(false);
-                },
-            });
+        try {
+            const data = await this.requestService.makeRequest<SentRequest[]>(
+                "user/friendship/sent",
+                HttpMethod.GET,
+                "Loading sent requests",
+                undefined,
+                { Authorization: `Bearer ${token}` },
+                { from: "0", to: "20" },
+            );
+
+            this.requests.set(data);
+            this.loading.set(false);
+        } catch (err) {
+            console.log(err);
+        }
     }
 
     isLoading() {

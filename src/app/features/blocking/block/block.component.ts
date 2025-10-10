@@ -6,8 +6,9 @@ import { signal } from "@angular/core";
 import { SERVER_ROUTE } from "../../../../environment/environment.secret";
 import { ErrorService } from "../../../core/services/error-service";
 
+//NEED TO BE REMADE
 //TODO @AlexGarciaPrada: This shouldn't be a page
-const context = "block";
+const errorCtx = "block";
 
 @Component({
     selector: "app-block",
@@ -70,7 +71,7 @@ export class BlockComponent {
                 },
                 error: (error) => {
                     console.error(
-                        this.errorsMap.getErrorMessage(context, error),
+                        this.errorsMap.getErrorMessage(errorCtx, error),
                     );
                     this.loading.set(false);
                 },

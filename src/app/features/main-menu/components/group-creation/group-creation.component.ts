@@ -1,5 +1,4 @@
-import { HttpClient, HttpParams } from "@angular/common/http";
-import { firstValueFrom, forkJoin } from "rxjs";
+import { HttpClient } from "@angular/common/http";
 import { isPlatformBrowser } from "@angular/common";
 import {
     Component,
@@ -13,9 +12,14 @@ import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import {
     GroupDialogComponent,
     GroupDialogInterface,
-    HttpMethod,
 } from "../../../groups/components/group-dialog/group-dialog.component";
-import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../core/services/request-service";
+
+const errorCtx = "group-creation";
+
 //TODO : @AlexGarciaPrada As in add-user this should be done in a more generic way
 @Component({
     selector: "group-creation",
@@ -35,6 +39,7 @@ export class GroupCreationComponent {
     constructor(
         private http: HttpClient,
         @Inject(PLATFORM_ID) private platformId: object,
+        private requestService: RequestService,
     ) {}
 
     async onOpenDialog() {
@@ -60,14 +65,18 @@ export class GroupCreationComponent {
             return;
         }
 
-        const params = new HttpParams().set("from", "0").set("to", "20");
+        const params = { from: "0", to: "20" };
 
         try {
-            const data = await firstValueFrom(
-                this.http.get<{ username: string; created_at: string }[]>(
-                    SERVER_ROUTE + "/api/user/friendship/friends",
-                    { headers: { Authorization: `Bearer ${token}` }, params },
-                ),
+            const data = await this.requestService.makeRequest<
+                { username: string; created_at: string }[]
+            >(
+                "user/friendship/friends",
+                HttpMethod.GET,
+                errorCtx,
+                undefined,
+                { Authorization: `Bearer ${token}` },
+                params,
             );
 
             this.usernames = data.map((friend) => friend.username);
@@ -78,7 +87,6 @@ export class GroupCreationComponent {
             this.loading = false;
         }
     }
-
     async openFriendSelectorDialog() {
         try {
             if (this.usernames.length === 0) {
@@ -93,7 +101,7 @@ export class GroupCreationComponent {
                 users: this.userIds,
                 httpOperation: HttpMethod.POST,
                 finalRoute: "/main-menu",
-                context: "group-creation",
+                errorCtx: "group-creation",
                 jsonField: "member_ids",
             };
 
@@ -116,20 +124,24 @@ export class GroupCreationComponent {
         }
     }
 
-    convertUserList(usernames: string[]): Promise<string[]> {
-        if (usernames.length === 0) {
-            return Promise.resolve([]);
-        }
+    async convertUserList(usernames: string[]): Promise<string[]> {
+        if (usernames.length === 0) return [];
 
-        const observables = usernames.map((username) => {
-            const params = new HttpParams().set("user_username", username);
-            return this.http.get<{ id: string }>(SERVER_ROUTE + "/api/user", {
-                params,
-            });
-        });
+        const token = localStorage.getItem("token");
+        if (!token) return [];
 
-        return firstValueFrom(forkJoin(observables)).then((results) =>
-            results.map((user) => user.id),
+        const promises = usernames.map((username) =>
+            this.requestService.makeRequest<{ id: string }, undefined>(
+                "user",
+                HttpMethod.GET,
+                errorCtx,
+                undefined,
+                { Authorization: `Bearer ${token}` },
+                { user_username: username },
+            ),
         );
+
+        const results = await Promise.all(promises);
+        return results.map((user) => user.id);
     }
 }

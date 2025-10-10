@@ -1,17 +1,28 @@
-import { Component, OnInit, signal } from "@angular/core";
-import { HttpClient } from "@angular/common/http";
+import { Component, inject, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { RouterModule } from "@angular/router";
-import { ErrorService } from "../../../core/services/error-service";
-import { SERVER_ROUTE } from "../../../../environment/environment.secret";
+import {
+    RequestService,
+    HttpMethod,
+} from "../../../core/services/request-service";
 
-const context = "recieve-friendships";
+//TODO: @AlexGarciaPrada This have to be remade entirely
+
+const errorCtx = "receive-friendships";
 
 interface FriendRequest {
     from_user_username: string;
     state: "pending" | "accepted" | "rejected";
     created_at: string;
+}
+
+interface FriendActionBody {
+    to_user_username: string;
+}
+
+interface FriendRequestsResponse {
+    requests: FriendRequest[];
 }
 
 @Component({
@@ -21,7 +32,7 @@ interface FriendRequest {
     templateUrl: "./received-friendship.component.html",
     styleUrls: ["./received-friendship.component.scss"],
 })
-export class FriendRequestsComponent implements OnInit {
+export class FriendRequestsComponent {
     readonly friendRequests = signal<FriendRequest[]>([]);
     readonly isLoading = signal(false);
     readonly error = signal<string | null>(null);
@@ -29,14 +40,11 @@ export class FriendRequestsComponent implements OnInit {
     pageSize = 10;
     currentPage = 0;
 
-    constructor(
-        private http: HttpClient,
-        private errorsMap: ErrorService,
-    ) {}
+    private requestService = inject(RequestService);
 
-    ngOnInit(): void {
+    async ngOnInit(): Promise<void> {
         if (typeof window === "undefined") return;
-        this.loadFriendRequests();
+        await this.loadFriendRequests();
     }
 
     setLoading(loading: boolean): void {
@@ -47,8 +55,9 @@ export class FriendRequestsComponent implements OnInit {
         this.error.set(error);
     }
 
-    loadFriendRequests(): void {
+    async loadFriendRequests(): Promise<void> {
         if (typeof window === "undefined") return;
+
         const token = localStorage.getItem("token");
         if (!token) {
             console.error("No token found.");
@@ -58,33 +67,69 @@ export class FriendRequestsComponent implements OnInit {
         const from = this.currentPage * this.pageSize;
         const to = from + this.pageSize;
 
-        const params = {
-            from: from.toString(),
-            to: to.toString(),
-        };
-
         this.setLoading(true);
         this.setError(null);
-        this.http
-            .get<FriendRequest[]>(
-                SERVER_ROUTE + "/api/user/friendship/received",
-                {
-                    headers: { Authorization: `Bearer ${token}` },
-                    params,
-                },
-            )
-            .subscribe({
-                next: (data) => {
-                    this.friendRequests.set(Array.isArray(data) ? data : []);
-                    this.setLoading(false);
-                },
-                error: (err) => {
-                    this.setError("Error loading requests");
-                    this.friendRequests.set([]);
-                    this.setLoading(false);
-                    console.error(err);
-                },
-            });
+
+        try {
+            const response =
+                await this.requestService.makeRequest<FriendRequestsResponse>(
+                    "user/friendship/received",
+                    HttpMethod.GET,
+                    errorCtx,
+                    undefined,
+                    { Authorization: `Bearer ${token}` },
+                    { from: from.toString(), to: to.toString() },
+                );
+
+            this.friendRequests.set(response.requests || []);
+            this.setLoading(false);
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
+    async onClickAccept(request: FriendRequest): Promise<void> {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const body: FriendActionBody = {
+            to_user_username: request.from_user_username,
+        };
+
+        try {
+            await this.requestService.makeRequest<object, FriendActionBody>(
+                "user/friendship/accept",
+                HttpMethod.POST,
+                errorCtx,
+                body,
+                { Authorization: `Bearer ${token}` },
+            );
+            await this.loadFriendRequests();
+        } catch (err) {
+            console.log(err);
+        }
+    }
+
+    async onClickReject(request: FriendRequest): Promise<void> {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const body: FriendActionBody = {
+            to_user_username: request.from_user_username,
+        };
+
+        try {
+            await this.requestService.makeRequest<object, FriendActionBody>(
+                "user/friendship/reject",
+                HttpMethod.POST,
+                errorCtx,
+                body,
+                { Authorization: `Bearer ${token}` },
+            );
+            await this.loadFriendRequests();
+        } catch (err) {
+            console.log(err);
+        }
     }
 
     nextPage(): void {
@@ -97,62 +142,5 @@ export class FriendRequestsComponent implements OnInit {
             this.currentPage--;
             this.loadFriendRequests();
         }
-    }
-
-    onClickAccept(request: FriendRequest): void {
-        if (typeof window === "undefined") return;
-        const token = localStorage.getItem("token");
-        if (!token) {
-            console.error("No token found.");
-            return;
-        }
-
-        const body = {
-            to_user_username: request.from_user_username,
-        };
-
-        this.http
-            .post(SERVER_ROUTE + "/api/user/friendship/accept", body, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            .subscribe({
-                next: () => {
-                    this.loadFriendRequests();
-                },
-                error: (error) => {
-                    console.error(
-                        this.errorsMap.getErrorMessage(context, error),
-                    );
-                },
-            });
-    }
-
-    onClickReject(request: FriendRequest): void {
-        if (typeof window === "undefined") return;
-        const token = localStorage.getItem("token");
-        if (!token) {
-            console.error("No token found.");
-            return;
-        }
-
-        const body = {
-            to_user_username: request.from_user_username,
-        };
-
-        this.http
-            .post(SERVER_ROUTE + "/api/user/friendship/reject", body, {
-                headers: { Authorization: `Bearer ${token}` },
-            })
-            .subscribe({
-                next: () => {
-                    console.log("You have rejected succesfully");
-                    this.loadFriendRequests();
-                },
-                error: (error) => {
-                    console.error(
-                        this.errorsMap.getErrorMessage(context, error),
-                    );
-                },
-            });
     }
 }

@@ -41,7 +41,7 @@ export class BubbleComponent implements AfterViewInit, OnChanges {
     private dragOccurred = false;
     private router = inject(Router);
 
-    constructor(private el: ElementRef) {}
+    private el = inject(ElementRef);
 
     ngAfterViewInit() {
         this.setPosition();

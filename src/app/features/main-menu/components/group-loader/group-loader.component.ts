@@ -1,5 +1,4 @@
 import { CommonModule, isPlatformBrowser } from "@angular/common";
-import { HttpClient, HttpHeaders, HttpParams } from "@angular/common/http";
 import {
     ChangeDetectorRef,
     Component,
@@ -8,10 +7,12 @@ import {
     PLATFORM_ID,
 } from "@angular/core";
 import { EventEmitter } from "@angular/core";
-import { ErrorService } from "../../../../core/services/error-service";
-import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
+import {
+    RequestService,
+    HttpMethod,
+} from "../../../../core/services/request-service";
 
-const context = "user-groups";
+const errorCtx = "user-groups";
 
 @Component({
     selector: "group-loader",
@@ -21,7 +22,6 @@ const context = "user-groups";
     styleUrl: "./group-loader.component.scss",
 })
 export class GroupLoader {
-    //TODO: @AlexGarciaPrada Change it with Angular20 signals
     @Output() groupsLoaded = new EventEmitter<{ groupId: string }[]>();
 
     loading = false;
@@ -29,9 +29,8 @@ export class GroupLoader {
     groups: { groupId: string }[] = [];
 
     constructor(
-        private http: HttpClient,
+        private requestService: RequestService,
         @Inject(PLATFORM_ID) private platformId: object,
-        private errorsMap: ErrorService,
         private cdRef: ChangeDetectorRef,
     ) {}
 
@@ -39,7 +38,7 @@ export class GroupLoader {
         this.loadGroups();
     }
 
-    loadGroups(): void {
+    async loadGroups(): Promise<void> {
         if (!isPlatformBrowser(this.platformId)) {
             this.loading = false;
             return;
@@ -52,34 +51,31 @@ export class GroupLoader {
 
         if (!token) {
             this.error = "You're not logged in";
-            console.error("There is no token");
             this.loading = false;
             return;
         }
 
-        const params = new HttpParams().set("from", "0").set("to", "20");
+        try {
+            const data = await this.requestService.makeRequest<
+                { id: string }[]
+            >(
+                "group/user-groups",
+                HttpMethod.GET,
+                errorCtx,
+                undefined, //The body
+                { Authorization: `Bearer ${token}` },
+            );
 
-        this.http
-            .get<{ id: string }[]>(SERVER_ROUTE + "/api/group/user-groups", {
-                headers: new HttpHeaders().set(
-                    "Authorization",
-                    `Bearer ${token}`,
-                ),
-                params,
-            })
-            .subscribe({
-                next: (data) => {
-                    this.groups = data.map((group) => ({ groupId: group.id }));
-                    this.loading = false;
-                    this.groupsLoaded.emit(this.groups);
-                    this.cdRef.detectChanges();
-                },
-                error: (error) => {
-                    this.errorsMap.getErrorMessage(context, error);
-                    this.error = `Error loading groups: ${error.message || error.status}`;
-                    this.loading = false;
-                },
-            });
+            if (data) {
+                this.groups = data.map((group) => ({ groupId: group.id }));
+                this.groupsLoaded.emit(this.groups);
+            }
+        } catch {
+            console.log("grouploader not working");
+        }
+
+        this.loading = false;
+        this.cdRef.detectChanges();
     }
 
     isLoading(): boolean {

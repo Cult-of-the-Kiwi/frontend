@@ -13,22 +13,16 @@ import {
     MatDialogRef,
 } from "@angular/material/dialog";
 import { Router } from "@angular/router";
-import { Observable } from "rxjs";
 import { GroupUserListComponent } from "./group-user-list/group-user-list.component";
 import { MatButtonModule } from "@angular/material/button";
-import { ErrorService } from "../../../../core/services/error-service";
-import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../core/services/request-service";
 
 //This is a generic dialog for the group operations. Yes, OOP entered in the frontend team
 
 //TODO: @AlexGarciaPrada For a better usage it will be needed userId -> username that it's not done in backend
-
-export enum HttpMethod {
-    GET,
-    POST,
-    PUT,
-    DELETE,
-}
 
 export interface GroupDialogInterface {
     groupId?: string;
@@ -39,7 +33,7 @@ export interface GroupDialogInterface {
     jsonField: string;
     finalRoute?: string; //In case it doesn't have it is the groupId
     uniqueAnswer?: boolean; // In default is not unique answer, puto Marcelo, pq se borran usuarios de uno en uno
-    context?: string;
+    errorCtx?: string;
     styleUrl?: string;
 }
 @Component({
@@ -54,6 +48,7 @@ export class GroupDialogComponent {
     dialogRef = inject(MatDialogRef<GroupDialogComponent>);
     data = inject<GroupDialogInterface>(MAT_DIALOG_DATA);
     private router = inject(Router);
+
     selection: string[] = [];
     uniqueAnswer = this.data.uniqueAnswer ?? false;
 
@@ -63,83 +58,48 @@ export class GroupDialogComponent {
     constructor(
         private http: HttpClient,
         @Inject(PLATFORM_ID) private platformId: object,
-        private errorsMap: ErrorService,
+        private requestService: RequestService,
     ) {}
 
-    onSubmitGroupDialog() {
+    async onSubmitGroupDialog(): Promise<void> {
         this.selection = [...this.groupUserList.selections];
 
-        if (!isPlatformBrowser(this.platformId)) {
-            return;
-        }
+        if (!isPlatformBrowser(this.platformId)) return;
 
         const token = localStorage.getItem("token");
-
         if (!token) {
             console.error("There is no token");
             return;
         }
-        const url = SERVER_ROUTE + "/api/group/" + this.data.route;
-        const headers = {
-            Authorization: `Bearer ${token}`,
-        };
 
-        let payload: { [key: string]: string | string[] };
+        let body: { [key: string]: string | string[] };
 
         if (this.uniqueAnswer) {
-            payload = { [this.data.jsonField]: this.selection[0] };
+            body = { [this.data.jsonField]: this.selection[0] };
         } else {
-            payload = { [this.data.jsonField]: this.selection };
+            body = { [this.data.jsonField]: this.selection };
         }
+        try {
+            //I Assume there is not a response. If its the case the options should be updated
+            const data = await this.requestService.makeRequest<
+                void,
+                typeof body
+            >(
+                "group/" + this.data.route,
+                this.data.httpOperation,
+                this.data.errorCtx ?? "",
+                body,
+                { Authorization: `Bearer ${token}` },
+            );
 
-        console.log(payload);
-
-        let request: Observable<typeof payload>;
-
-        //Coffee for everyone
-        switch (this.data.httpOperation) {
-            case HttpMethod.POST:
-                request = this.http.post<typeof payload>(url, payload, {
-                    headers,
-                });
-                break;
-
-            case HttpMethod.PUT:
-                request = this.http.put<typeof payload>(url, payload, {
-                    headers,
-                });
-                break;
-
-            case HttpMethod.DELETE:
-                request = this.http.delete<typeof payload>(url, {
-                    headers,
-                });
-                break;
-
-            case HttpMethod.GET:
-                request = this.http.get<typeof payload>(url, {
-                    headers,
-                });
-                break;
-
-            default:
-                console.error("HTTP Method not supported");
-                return;
+            this.dialogRef.close(data);
+            this.router.navigate([
+                this.data.finalRoute ?? "group/" + this.data.groupId,
+            ]);
+            //TODO: @AlexGarciaPrada Update this
+            window.location.reload();
+        } catch (error) {
+            console.log(error);
         }
-        request.subscribe({
-            next: (data) => {
-                this.dialogRef.close(data);
-                this.router.navigate([
-                    this.data.finalRoute ?? "group/" + this.data.groupId,
-                ]);
-                //For reloading the page
-                window.location.reload();
-            },
-            error: (error) => {
-                console.error(
-                    this.errorsMap.getErrorMessage(this.data.context!, error),
-                );
-            },
-        });
     }
 }
