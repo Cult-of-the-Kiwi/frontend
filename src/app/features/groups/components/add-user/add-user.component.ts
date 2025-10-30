@@ -1,16 +1,16 @@
-import { Component, Inject, inject, Input, PLATFORM_ID } from "@angular/core";
+import { Component, inject, Input, PLATFORM_ID } from "@angular/core";
 import { MatDialog, MatDialogConfig } from "@angular/material/dialog";
 import { CommonModule, isPlatformBrowser } from "@angular/common";
 import {
     GroupDialogComponent,
     GroupDialogInterface,
-    HttpMethod,
 } from "../group-dialog/group-dialog.component";
-import { firstValueFrom, forkJoin } from "rxjs";
-import { HttpClient, HttpParams } from "@angular/common/http";
-import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../core/services/request-service";
 
-//TODO: @AlexGarciaPrada this is copypasted from group-creation.component.ts, resolve it
+const errorCtx = "add-user";
 
 @Component({
     selector: "add-user",
@@ -22,22 +22,23 @@ import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
 export class AddUserComponent {
     @Input() members: string[] = [];
     @Input() groupId!: string;
+
     dialog = inject(MatDialog);
+    private platformId = inject(PLATFORM_ID);
+    private requestService = inject(RequestService);
+
     private usernames: string[] = [];
     private friendsIds: string[] = [];
     private notMemberFriends: string[] = [];
 
-    constructor(
-        private http: HttpClient,
-        @Inject(PLATFORM_ID) private platformId: object,
-    ) {}
     async openAddUserDialog() {
         try {
             await this.loadFriends();
         } catch (err) {
             console.error("Error opening dialog:", err);
+            return;
         }
-        //Another way is to convert it into a set, not much better
+
         this.notMemberFriends = this.friendsIds.filter(
             (id) => !this.members.includes(id),
         );
@@ -49,18 +50,18 @@ export class AddUserComponent {
             users: this.notMemberFriends,
             httpOperation: HttpMethod.PUT,
             jsonField: "user_ids",
-            context: "add-user",
+            errorCtx: "add-user",
         };
+
         const dialogConfig = new MatDialogConfig();
         dialogConfig.width = "500px";
         dialogConfig.data = dialogInfo;
 
         this.dialog.open(GroupDialogComponent, dialogConfig);
     }
+
     async loadFriends(): Promise<void> {
-        if (!isPlatformBrowser(this.platformId)) {
-            return;
-        }
+        if (!isPlatformBrowser(this.platformId)) return;
 
         const token = localStorage.getItem("token");
         if (!token) {
@@ -68,14 +69,21 @@ export class AddUserComponent {
             return;
         }
 
-        const params = new HttpParams().set("from", "0").set("to", "20");
+        const params = { from: "0", to: "20" };
 
         try {
-            const data = await firstValueFrom(
-                this.http.get<{ username: string; created_at: string }[]>(
-                    SERVER_ROUTE + "/api/user/friendship/friends",
-                    { headers: { Authorization: `Bearer ${token}` }, params },
-                ),
+            const data = await this.requestService.makeRequest<
+                { username: string; created_at: string }[],
+                undefined
+            >(
+                "user/friendship/friends",
+                HttpMethod.GET,
+                errorCtx,
+                undefined,
+                {
+                    Authorization: `Bearer ${token}`,
+                },
+                params,
             );
 
             this.usernames = data.map((friend) => friend.username);
@@ -83,22 +91,27 @@ export class AddUserComponent {
             console.error("Error loading friends:", error);
             this.usernames = [];
         }
+
         this.friendsIds = await this.convertUserList(this.usernames);
     }
-    convertUserList(usernames: string[]): Promise<string[]> {
-        if (usernames.length === 0) {
-            return Promise.resolve([]);
-        }
 
-        const observables = usernames.map((username) => {
-            const params = new HttpParams().set("user_username", username);
-            return this.http.get<{ id: string }>(SERVER_ROUTE + "/api/user", {
-                params,
-            });
-        });
+    async convertUserList(usernames: string[]): Promise<string[]> {
+        if (usernames.length === 0) return [];
 
-        return firstValueFrom(forkJoin(observables)).then((results) =>
-            results.map((user) => user.id),
+        const token = localStorage.getItem("token");
+        if (!token) return [];
+
+        const promises = usernames.map((username) =>
+            this.requestService.makeRequest<{ id: string }, undefined>(
+                `user?user_username=${username}`,
+                HttpMethod.GET,
+                errorCtx,
+                undefined,
+                { Authorization: `Bearer ${token}` },
+            ),
         );
+
+        const results = await Promise.all(promises);
+        return results.map((user) => user.id);
     }
 }

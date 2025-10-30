@@ -10,7 +10,7 @@ import { ErrorService } from "../../../core/services/error-service";
 
 //TODO: make an error when the user was already unblocked (different that when it doesn't exist)
 
-const context = "unblock";
+const errorCtx = "unblock";
 
 @Component({
     selector: "app-blocks-unblock",
@@ -72,7 +72,7 @@ export class UnblockComponent {
                 },
                 error: (error) => {
                     console.error(
-                        this.errorsMap.getErrorMessage(context, error),
+                        this.errorsMap.getErrorMessage(errorCtx, error),
                     );
                     this.loading.set(false);
                 },

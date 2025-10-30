@@ -1,12 +1,26 @@
 import { Component, inject } from "@angular/core";
 import { ReactiveFormsModule, FormBuilder, Validators } from "@angular/forms";
-import { HttpClient } from "@angular/common/http";
 import { Router } from "@angular/router";
 import { toSignal } from "@angular/core/rxjs-interop";
-import { ErrorService } from "../../../../core/services/error-service";
-import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../core/services/request-service";
 
-const context = "login";
+interface LoginRequestResponse {
+    token: string;
+    username: string;
+    email: string;
+    telephone?: string;
+    user_id: string;
+}
+//This null |undefined has to be with the FormControl
+//TODO:@AlexGarciaPrada Redo the form, it's just not good
+interface LoginRequestBody {
+    username: string | null | undefined;
+    password: string | null | undefined;
+}
+const errorCtx = "login";
 @Component({
     selector: "log-in",
     imports: [ReactiveFormsModule],
@@ -15,10 +29,8 @@ const context = "login";
 })
 export class LogInPage {
     private fb = inject(FormBuilder);
-    private http = inject(HttpClient);
     private router = inject(Router);
-
-    constructor(private errorsMap: ErrorService) {}
+    private requestService = inject(RequestService);
 
     readonly logInForm = this.fb.group({
         username: ["", Validators.required],
@@ -29,7 +41,7 @@ export class LogInPage {
         initialValue: this.logInForm.valid ? "VALID" : "INVALID",
     });
 
-    onSubmitLogIn(): void {
+    async onSubmit(): Promise<void> {
         if (!this.logInForm.valid) {
             console.warn("Fill the form correctly");
             return;
@@ -37,41 +49,27 @@ export class LogInPage {
 
         const { username, password } = this.logInForm.value;
 
-        this.http
-            .post<{
-                token: string;
-                username: string;
-                email: string;
-                telephone?: string;
-                user_id: string;
-            }>(SERVER_ROUTE + "/api/auth/login", {
-                username,
-                password,
-            })
-            .subscribe({
-                next: (data) => {
-                    console.log(data);
-                    if (data.username) {
-                        localStorage.setItem(
-                            "user",
-                            JSON.stringify({
-                                username: data.username,
-                                email: data.email,
-                                telephone: data.telephone || null,
-                                user_id: data.user_id,
-                            }),
-                        );
-                    }
-                    if (data.token) {
-                        localStorage.setItem("token", data.token);
-                    }
-                    this.router.navigate(["/main-menu"]);
-                },
-                error: (error) => {
-                    console.error(
-                        this.errorsMap.getErrorMessage(context, error),
-                    );
-                },
-            });
+        try {
+            const data = await this.requestService.makeRequest<
+                LoginRequestResponse,
+                LoginRequestBody
+            >("auth/login", HttpMethod.POST, errorCtx, { username, password });
+            if (data.username && data.token) {
+                localStorage.setItem(
+                    "user",
+                    JSON.stringify({
+                        username: data.username,
+                        email: data.email,
+                        telephone: data.telephone || null,
+                        user_id: data.user_id,
+                    }),
+                );
+                localStorage.setItem("token", data.token);
+                this.router.navigate(["/main-menu"]);
+            }
+        } catch (error) {
+            //I don't think here I should do anything, but idk
+            console.log(error);
+        }
     }
 }
