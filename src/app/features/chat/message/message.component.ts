@@ -18,48 +18,43 @@ export class MessageComponent implements OnDestroy {
   private subs = new Subscription();
   private channelId = "b9889189-6940-4176-943f-98384f7015e9";
 
-  constructor(private send: SendService,private messageHistory: RecieveService) {
+  currentUserId: string = "";
+
+  constructor(private sendService: SendService, private receiveService: RecieveService) {//renamed because in some point there
+    //was something like send.send.send -_-
+    
+    const user = localStorage.getItem("user");
+    this.currentUserId = user ? JSON.parse(user).user_id : "yo";
     this.initChat(this.channelId);
+    
   }
 
   private initChat(channelId: string) {
-    this.send.init();
+
+    this.sendService.init(channelId);
+
+    this.receiveService.getMessages(channelId).subscribe({
+      next: (msgs: MessageFormat[]) => {
+        this.messages = msgs;
+        console.log("Histórico cargado:", msgs.length, "mensajes");
+      },
+      error: (err: any) => console.error("Error al cargar histórico:", err),
+    });
 
     this.subs.add(
-      this.messageHistory.getMessages(channelId).subscribe({
-        next: msgs => this.messages = msgs,
+        this.sendService.message.subscribe((msg: MessageFormat) => {
+          if (!msg.message) return console.warn("Mensaje vacío:", msg);
 
-        error: (err) => console.error("Error cargando histórico:", err)
-      })
-    );
-
-    this.subs.add(
-      this.send.message.subscribe(msg => this.messages.push(msg))
-    );
-
-    this.subs.add(
-      this.send.open.subscribe(() => {
-        console.log("Socket listo, ya se pueden enviar mensajes");
-      })
-    );
+          this.messages.push(msg);
+        })
+      );
   }
 
   sendMessage() {
     const text = this.messageInput.trim();
     if (!text) return;
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    const senderId = user.user_id || "yo";
-
-    const msgToSend = { info: { text }, sender_id: senderId };
-    this.send.send(JSON.stringify(msgToSend));
-
-    this.messages.push({
-      info: {text},
-      sender_id: senderId,
-      type: "user"
-    });
-
+    this.sendService.send(text);
     this.messageInput = "";
   }
 
