@@ -4,7 +4,6 @@ import { SERVER_ROUTE } from "../../../../../environment/environment.secret";
 //En el anterior esto no estaba aquí, pero para proceder a la operación rescate es necesario.
 //faltaba por limpiar campos, ya he quitado a la fuerza los que sobraban, ya descubriré porque fallaba
 export interface MessageFormat  {
-  id: string;
   sender_id: string;
   channel_id:string;
   message: string ;
