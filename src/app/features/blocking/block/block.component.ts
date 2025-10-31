@@ -58,7 +58,7 @@ export class BlockComponent {
         };
 
         this.http
-            .post(SERVER_ROUTE + "/api/user/blocks/block", body, {
+            .post(SERVER_ROUTE + "api/user/blocks/block", body, {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .subscribe({
