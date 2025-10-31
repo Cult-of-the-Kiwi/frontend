@@ -46,7 +46,7 @@ export class LogoutComponent {
         }
 
         this.http
-            .post(`${SERVER_ROUTE}/api/auth/logout?userId=${userId}`, null)
+            .post(`${SERVER_ROUTE}api/auth/logout?userId=${userId}`, null)
             .subscribe({
                 next: () => {
                     localStorage.removeItem("token");
