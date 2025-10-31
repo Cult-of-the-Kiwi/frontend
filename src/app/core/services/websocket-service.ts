@@ -55,6 +55,7 @@ export class WebSocketService<T> {
         protocols?: string | string[],
         options?: { isMessage?: boolean, channelId?: string }
 
+
     ) {
         this.extension = extension;
 
@@ -105,14 +106,17 @@ export class WebSocketService<T> {
     private connectWebSocket(protocols?: string | string[]) {
         const wsUrl = SERVER_ROUTE + this.extension;
         const token = localStorage.getItem("token"); 
-        if (!token) return; //PARA MARCELO=>O pones esto o el compilador se enfada :)
+        if (!token) return; 
+
         if (this.isMessage && this.channelId) {
             this.socket = new WebSocket(wsUrl, [token, this.channelId]);
         } else {
             this.socket = new WebSocket(wsUrl, [token]);
         }
 
+
         this.socket.onopen = () => {
+            
             //This is just for debugging
             console.log("WS opened: " + this.extension);
             this.startKeepAlive();
@@ -132,7 +136,7 @@ export class WebSocketService<T> {
         };
 
         this.socket.onclose = (event) => {
-            console.log("WS closed: " + this.extension, event);
+            console.warn("WS closed: " + this.extension, event);
             this.stopKeepAlive();
 
             if (this.onClose) this.onClose(event);
