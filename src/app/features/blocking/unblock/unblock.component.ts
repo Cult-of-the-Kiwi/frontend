@@ -59,7 +59,7 @@ export class UnblockComponent {
         };
 
         this.http
-            .post(SERVER_ROUTE + "/api/user/blocks/unblock", body, {
+            .post(SERVER_ROUTE + "api/user/blocks/unblock", body, {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .subscribe({

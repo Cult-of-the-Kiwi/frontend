@@ -59,7 +59,7 @@ export class UpdateUsernameComponent {
         };
 
         this.http
-            .post(SERVER_ROUTE + "/api/user/update", body, {
+            .post(SERVER_ROUTE + "api/user/update", body, {
                 headers: { Authorization: `Bearer ${token}` },
             })
             .subscribe({

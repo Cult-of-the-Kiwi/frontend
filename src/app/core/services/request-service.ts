@@ -31,7 +31,7 @@ export class RequestService {
         headers?: Record<string, string>,
         params?: Record<string, string>,
     ): Promise<T> {
-        const url = SERVER_ROUTE + "/api/" + extension;
+        const url = SERVER_ROUTE + "api/" + extension;
         let httpHeaders = new HttpHeaders({
             "Content-Type": "application/json",
             ...headers,
