@@ -1,151 +1,159 @@
 import { Observable, Subject } from "rxjs";
 import { SERVER_ROUTE } from "../../../environment/environment.secret";
 
+/**
+ * WebSocketService<T>
+ *
+ * Abstract base class for connecting to a WebSocket server and handling typed messages
+ * using RxJS Observables.
+ *
+ * T: The type of the messages exchanged over the WebSocket.
+ *
+ * Features:
+ * - Automatic connection to the WebSocket server with the given extension.
+ * - Parses incoming JSON messages and emits them via a Subject as an Observable<T>.
+ * - Handles WebSocket events: onopen, onmessage, onclose (with automatic reconnection), and onerror.
+ *
+ * Usage:
+ * Extend this class and provide the message type T, then pass the WebSocket extension
+ * to the constructor of the base class.
+ */
+
 type OpenCallback = () => void;
 type CloseCallback = (event: CloseEvent) => void;
 type MessageCallback<T> = (message: T) => void;
 type ErrorCallback = (error: Event | Error) => void;
 
 interface WebSocketCallbacks<T> {
-  onOpen?: OpenCallback;
-  onClose?: CloseCallback;
-  onMessage?: MessageCallback<T>;
-  onError?: ErrorCallback;
+    onOpen?: OpenCallback;
+    onClose?: CloseCallback;
+    onMessage?: MessageCallback<T>;
+    onError?: ErrorCallback;
 }
 
 export class WebSocketService<T> {
-  private readonly messageSubject = new Subject<T>();
-  private socket!: WebSocket;
-  private readonly extension: string;
+    private readonly messageSubject = new Subject<T>();
+    private socket!: WebSocket;
+    private readonly extension: string;
 
-  private keepAliveInterval: ReturnType<typeof setInterval> | null = null;
-  private readonly keepAliveTime = 30000;
+    private keepAliveInterval: ReturnType<typeof setInterval> | null = null;
+    private readonly keepAliveTime = 30000;
 
-  private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
-  private reconnectAttempts = 0;
+    private reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
+    private reconnectAttempts = 0;
 
-  private readonly onOpen?: OpenCallback;
-  private readonly onClose?: CloseCallback;
-  private readonly onMessage?: MessageCallback<T>;
-  private readonly onError?: ErrorCallback;
+    private readonly onOpen?: OpenCallback;
+    private readonly onClose?: CloseCallback;
+    private readonly onMessage?: MessageCallback<T>;
+    private readonly onError?: ErrorCallback;
 
-  // If true, treat incoming messages as plain strings (no JSON parse)
-  private readonly isPlainTextMessages: boolean;
+    manualClose = true;
 
-  constructor(
-    extension: string,
-    callbacks?: WebSocketCallbacks<T>,
-    options?: { isPlainTextMessages?: boolean }
-  ) {
-    this.extension = extension;
-    this.onOpen = callbacks?.onOpen;
-    this.onClose = callbacks?.onClose;
-    this.onMessage = callbacks?.onMessage;
-    this.onError = callbacks?.onError;
-    this.isPlainTextMessages = options?.isPlainTextMessages ?? false;
-    this.connectWebSocket();
-  }
+    constructor(
+        extension: string,
+        callbacks?: WebSocketCallbacks<T>,
+        protocols?: string | string[],
+    ) {
+        this.extension = extension;
 
-  public close() {
-    if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-      this.socket.close();
+        this.onOpen = callbacks?.onOpen;
+        this.onClose = callbacks?.onClose;
+        this.onMessage = callbacks?.onMessage;
+        this.onError = callbacks?.onError;
+
+        this.connectWebSocket(protocols);
     }
-  }
 
-  private startKeepAlive() {
-    this.stopKeepAlive();
-    this.keepAliveInterval = setInterval(() => {
-      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
-        // send plain ping (not JSON) to avoid breaking text-only contract
-        try { this.socket.send("ping"); } catch (e) { /* noop */ }
-      }
-    }, this.keepAliveTime);
-  }
-
-  private stopKeepAlive() {
-    if (this.keepAliveInterval) {
-      clearInterval(this.keepAliveInterval);
-      this.keepAliveInterval = null;
+    private startKeepAlive() {
+        this.keepAliveInterval = setInterval(() => {
+            if (this.socket.readyState === WebSocket.OPEN)
+                this.socket.send(JSON.stringify({ type: "ping" }));
+        }, this.keepAliveTime);
     }
-  }
 
-  private reconnectWithBackoff() {
-    if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
-
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-    console.log("WebSocketService: reconnecting in " + delay + "ms");
-
-    this.reconnectTimeout = setTimeout(() => {
-      this.reconnectAttempts++;
-      this.connectWebSocket();
-    }, delay);
-  }
-
-  public connect(): Observable<T> {
-    // already connects in constructor; this just exposes the observable
-    return this.messageSubject.asObservable();
-  }
-
-  private connectWebSocket(protocols?: string | string[]) {
-  const wsUrl = SERVER_ROUTE.replace("https", "wss") + this.extension;
-  const token = localStorage.getItem("token");
-
-  console.log("Intentando abrir socket a", wsUrl);
-  console.log("Token enviado como subprotocol:", token);
-
-  if (!token) {
-    console.error("❌ No hay token en localStorage");
-    return;
-  }
-
-  this.socket = new WebSocket(wsUrl, [token]);
-
-  this.socket.onopen = () => {
-    console.log("✅ WS abierto correctamente:", wsUrl);
-    this.startKeepAlive();
-    this.onOpen?.();
-  };
-
-  this.socket.onmessage = (event) => {
-    console.log("📩 Mensaje recibido (raw):", event.data);
-    try {
-      const data: T = JSON.parse(event.data);
-      this.messageSubject.next(data);
-      this.onMessage?.(data);
-    } catch (err) {
-      console.error("Error parseando JSON:", err);
+    private stopKeepAlive() {
+        if (this.keepAliveInterval) clearInterval(this.keepAliveInterval);
     }
-  };
+    public disconnect(): void {
+        console.log("WebSocket manual disconnect called:", this.extension);
+        this.manualClose = true;
 
-  this.socket.onclose = (event) => {
-    console.warn("❌ Socket cerrado:", event.code, event.reason);
-    this.stopKeepAlive();
-    this.onClose?.(event);
-    this.reconnectWithBackoff();
-  };
+        this.stopKeepAlive();
+        if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.close(1000, "Client disconnected");
+        }
 
-  this.socket.onerror = (err) => {
-    console.error("💥 WS error:", err);
-    this.stopKeepAlive();
-    this.onError?.(err);
-  };
-}
-
-  public send(msg: T) {
-    if (!this.socket) {
-      console.warn("WebSocketService: socket not initialized, dropping send");
-      return;
+        this.messageSubject.complete();
     }
-    if (this.socket.readyState === WebSocket.OPEN) {
-      // If message is string, send raw (spec requires plain text)
-      if (typeof msg === "string") {
-        this.socket.send(msg);
-      } else {
-        // Otherwise send JSON
-        this.socket.send(JSON.stringify(msg));
-      }
-    } else {
-      console.warn("WebSocketService: socket not OPEN, message not sent:", msg);
+
+    private reconnectWithBackoff() {
+        if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+
+        if (this.manualClose) {
+            console.log("Manual close detected — skipping reconnection.");
+            return;
+        }
+        const delay = Math.min(
+            1000 * Math.pow(2, this.reconnectAttempts),
+            30000,
+        );
+        console.log("Reconnecting in " + delay + "ms");
+
+        this.reconnectTimeout = setTimeout(() => {
+            this.reconnectAttempts++;
+            this.connectWebSocket();
+        }, delay);
     }
-  }
+
+    public connect(): Observable<T> {
+        this.connectWebSocket();
+        return this.messageSubject.asObservable();
+    }
+
+    private connectWebSocket(protocols?: string | string[]) {
+        const wsUrl = SERVER_ROUTE + this.extension;
+        this.socket = new WebSocket(wsUrl, protocols);
+
+        this.socket.onopen = () => {
+            //This is just for debugging
+            console.log("WS opened: " + this.extension);
+            this.startKeepAlive();
+
+            if (this.onOpen) this.onOpen();
+        };
+
+        this.socket.onmessage = (event) => {
+            try {
+                const data: T = JSON.parse(event.data);
+                this.messageSubject.next(data);
+                if (this.onMessage) this.onMessage(data);
+            } catch (err) {
+                console.error("Error parsing JSON:", err);
+                if (this.onError) this.onError(err as Error);
+            }
+        };
+
+        this.socket.onclose = (event) => {
+            console.log("WS closed: " + this.extension, event);
+            this.stopKeepAlive();
+
+            if (this.onClose) this.onClose(event);
+            this.reconnectWithBackoff();
+        };
+
+        this.socket.onerror = (err) => {
+            console.error("WS error: " + this.extension, err);
+            this.stopKeepAlive();
+
+            if (this.onError) this.onError(err);
+        };
+    }
+    public send(msg: T) {
+        if (this.socket.readyState === WebSocket.OPEN) {
+            this.socket.send(JSON.stringify(msg));
+        } else {
+            console.warn("WebSocket not ready, message queued:", msg);
+        }
+    }
 }

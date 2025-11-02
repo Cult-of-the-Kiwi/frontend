@@ -1,64 +1,60 @@
-import { Component, OnDestroy } from "@angular/core";
+import { Component, inject, Input, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import { Subscription } from "rxjs";
-import { SendService } from "../message/send/send.service";
-import { RecieveService, MessageFormat } from "../message/recieve/recieve.service";
+import {
+    MessageFormat,
+    MessageService,
+} from "../../../core/services/message-service";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../core/services/request-service";
 
+const extension = "message/";
 @Component({
-  selector: "app-message",
-  standalone: true,
-  imports: [CommonModule, FormsModule],
-  templateUrl: "./message.component.html",
-  styleUrls: ["./message.component.scss"],
+    selector: "app-message",
+    standalone: true,
+    imports: [CommonModule, FormsModule],
+    templateUrl: "./message.component.html",
+    styleUrls: ["./message.component.scss"],
 })
-export class MessageComponent implements OnDestroy {
-  messageInput = "";
-  messages: MessageFormat[] = [];
-  private subs = new Subscription();
-  private channelId = "b9889189-6940-4176-943f-98384f7015e9";
+export class MessageComponent {
+    @Input() channel_id: string = "";
+    messageInput = "";
+    messages = signal<MessageFormat[]>([]);
+    private subs = new Subscription();
+    private requestService = inject(RequestService);
+    private messageService = inject(MessageService);
 
-  currentUserId: string = "";
+    currentUserId: string = "";
 
-  constructor(private sendService: SendService, private receiveService: RecieveService) {
-    const user = localStorage.getItem("user");
-    this.currentUserId = user ? JSON.parse(user).user_id : "yo";
-    this.initChat(this.channelId);
-  }
-private async initChat(channelId: string) {
-  try {
-    // Saltamos group_id fetch
-    this.sendService.init(channelId);
+    ngOnInit() {
+        this.loadMessages();
+    }
+    constructor() {}
 
-    // Cargar historial
-    this.receiveService.getMessages(channelId).subscribe({
-      next: (msgs) => {
-        this.messages = msgs;
-      },
-      error: (err) => console.error("Error al cargar histórico:", err),
-    });
+    sendMessage() {
+        this.messageService.send(this.messageInput);
+    }
 
-    this.subs.add(
-      this.sendService.message.subscribe((msg) => {
-        if (!msg.message) return;
-        this.messages.push(msg);
-      })
-    );
-  } catch (err) {
-    console.error("Error inicializando chat:", err);
-  }
-}
-
-
-  sendMessage() {
-    const text = this.messageInput.trim();
-    if (!text) return;
-    this.sendService.send(text);
-    this.messageInput = "";
-  }
-
-  ngOnDestroy() {
-    this.subs.unsubscribe();
-    this.sendService.close();
-  }
+    //This loads the previous messages
+    async loadMessages() {
+        const token = localStorage.getItem("token") ?? "";
+        try {
+            const messages = await this.requestService.makeRequest<
+                MessageFormat[]
+            >(
+                extension + this.channel_id,
+                HttpMethod.GET,
+                "",
+                {},
+                { Authorization: `Bearer ${token}` },
+            );
+            console.log(messages);
+            this.messages.set(messages);
+        } catch (error) {
+            console.warn(error);
+        }
+    }
 }

@@ -1,7 +1,7 @@
 <div class="chat-container">
   <div #messagesContainer class="messages">
     <div
-      *ngFor="let msg of messages"
+      *ngFor="let msg of messages()"
       class="message"
       [class.me]="msg.sender_id === currentUserId"
     >

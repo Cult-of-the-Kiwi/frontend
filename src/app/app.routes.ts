@@ -12,8 +12,6 @@ import { UpdateUsernameComponent } from "./features/update/update.component";
 import { MainMenuPage } from "./features/main-menu/pages/main-menu.page";
 import { GroupPage } from "./features/groups/pages/group.page";
 import { CallPage } from "./features/call/pages/call.page";
-import { MessageComponent } from "./features/chat/message/message.component";
-
 
 //TODO: Eso lo hice yo, y sí, están hechos como componentes, todo lo relacionado con los friends
 export const routes: Routes = [
@@ -31,6 +29,5 @@ export const routes: Routes = [
     { path: "group/:groupId", component: GroupPage },
     //At the time there is only one call in each group
     { path: "group/:groupId/call", component: CallPage },
-    { path: "messages/:id", component:MessageComponent },
     { path: "", redirectTo: "home", pathMatch: "full" },
 ];
