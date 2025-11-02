@@ -20,45 +20,45 @@ export class MessageComponent implements OnDestroy {
 
   currentUserId: string = "";
 
-  constructor(private sendService: SendService, private receiveService: RecieveService) {//renamed because in some point there
-    //was something like send.send.send -_-
-    
+  constructor(private sendService: SendService, private receiveService: RecieveService) {
     const user = localStorage.getItem("user");
     this.currentUserId = user ? JSON.parse(user).user_id : "yo";
     this.initChat(this.channelId);
-    
   }
-
-  private initChat(channelId: string) {
-
+private async initChat(channelId: string) {
+  try {
+    // Saltamos group_id fetch
     this.sendService.init(channelId);
 
+    // Cargar historial
     this.receiveService.getMessages(channelId).subscribe({
-      next: (msgs: MessageFormat[]) => {
+      next: (msgs) => {
         this.messages = msgs;
-        console.log("Histórico cargado:", msgs.length, "mensajes");
       },
-      error: (err: any) => console.error("Error al cargar histórico:", err),
+      error: (err) => console.error("Error al cargar histórico:", err),
     });
 
     this.subs.add(
-        this.sendService.message.subscribe((msg: MessageFormat) => {
-          if (!msg.message) return console.warn("Mensaje vacío:", msg);
-
-          this.messages.push(msg);
-        })
-      );
+      this.sendService.message.subscribe((msg) => {
+        if (!msg.message) return;
+        this.messages.push(msg);
+      })
+    );
+  } catch (err) {
+    console.error("Error inicializando chat:", err);
   }
+}
+
 
   sendMessage() {
     const text = this.messageInput.trim();
     if (!text) return;
-
     this.sendService.send(text);
     this.messageInput = "";
   }
 
   ngOnDestroy() {
     this.subs.unsubscribe();
+    this.sendService.close();
   }
 }
