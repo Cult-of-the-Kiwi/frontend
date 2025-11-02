@@ -3,7 +3,7 @@ import { ActivatedRoute } from "@angular/router";
 import { WebSocketService } from "../../../core/services/websocket-service";
 
 //Fill it with the actual extension
-const extension = "/ws/call";
+const extension = "ws/call";
 
 export enum WebSocketMessageType {
     ConnectToRoom = "connecttoroom",
@@ -72,7 +72,8 @@ export class CallPage {
         const token = localStorage.getItem("token") ?? "";
         this.websocketService = new WebSocketService(
             extension,
-            this.callbacks
+            this.callbacks,
+            token,
         );
     }
 
