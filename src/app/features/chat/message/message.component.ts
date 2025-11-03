@@ -1,7 +1,6 @@
-import { Component, inject, Input, signal } from "@angular/core";
+import { Component, inject, Input } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
-import { Subscription } from "rxjs";
 import {
     MessageFormat,
     MessageService,
@@ -10,7 +9,6 @@ import {
     HttpMethod,
     RequestService,
 } from "../../../core/services/request-service";
-
 const extension = "message/";
 @Component({
     selector: "app-message",
@@ -22,10 +20,10 @@ const extension = "message/";
 export class MessageComponent {
     @Input() channel_id: string = "";
     messageInput = "";
-    messages = signal<MessageFormat[]>([]);
-    private subs = new Subscription();
     private requestService = inject(RequestService);
     private messageService = inject(MessageService);
+
+        messages = this.messageService.messages; // directly use the service signal
 
     currentUserId: string = "";
 
@@ -35,16 +33,16 @@ export class MessageComponent {
     constructor() {}
 
     sendMessage() {
+        if (!this.messageInput.trim()) 
+            return;
         this.messageService.send(this.messageInput);
+        this.messageInput = "";
     }
 
-    //This loads the previous messages
     async loadMessages() {
         const token = localStorage.getItem("token") ?? "";
         try {
-            const messages = await this.requestService.makeRequest<
-                MessageFormat[]
-            >(
+            const messages = await this.requestService.makeRequest<MessageFormat[]>(
                 extension + this.channel_id,
                 HttpMethod.GET,
                 "",

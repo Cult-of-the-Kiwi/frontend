@@ -47,7 +47,7 @@ export class WebSocketService<T> {
     private readonly onMessage?: MessageCallback<T>;
     private readonly onError?: ErrorCallback;
 
-    manualClose = true;
+    manualClose = false;
 
     constructor(
         extension: string,

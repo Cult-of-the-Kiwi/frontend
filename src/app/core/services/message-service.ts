@@ -1,4 +1,4 @@
-import { inject, Injectable, PLATFORM_ID } from "@angular/core";
+import { inject, Injectable, PLATFORM_ID, signal, WritableSignal } from "@angular/core";
 import { WebSocketService } from "./websocket-service";
 import { isPlatformBrowser } from "@angular/common";
 
@@ -9,6 +9,7 @@ export interface MessageFormat {
     message: string;
     created_at?: string;
 }
+
 const extension = "/ws/message";
 const sleep = (ms: number): Promise<void> => {
     return new Promise((resolve) => setTimeout(resolve, ms));
@@ -17,7 +18,7 @@ const sleep = (ms: number): Promise<void> => {
 export class MessageService {
     private lastSentMessage: string = "";
     private messageQueue: string[] = [];
-    private isConnected: boolean = false;
+    public messages: WritableSignal<MessageFormat[]> = signal([]);
 
     private platformId = inject(PLATFORM_ID);
     private ws: WebSocketService<MessageFormat> | undefined;
@@ -25,9 +26,13 @@ export class MessageService {
     private callbacks = {
         onOpen: () => console.log("Messages connected"),
         onClose: (e: CloseEvent) => console.log(e),
-        onMessage: (data: MessageFormat) => console.log(data),
+        onMessage: (data: MessageFormat) => {
+                    console.log("Message recieved",data);
+                    this.messages.update(list => [...list, data]);
+        },
         onError: (err: Event | Error) => console.error(err),
     };
+
     constructor() {
         if (isPlatformBrowser(this.platformId)) {
             sleep(1000).then(() => {
@@ -39,14 +44,12 @@ export class MessageService {
             });
         }
     }
+
     send(text: string) {
         const trimmed = text?.trim();
         if (!trimmed) return;
-
         this.lastSentMessage = trimmed;
-
         this.ws?.send({ message: trimmed }); // send plain text
-
         this.messageQueue.push(trimmed);
     }
 }
