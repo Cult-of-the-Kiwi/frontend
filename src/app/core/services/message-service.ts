@@ -16,7 +16,6 @@ const sleep = (ms: number): Promise<void> => new Promise(res => setTimeout(res, 
 
 @Injectable({ providedIn: "root" })
 export class MessageService {
-    private lastSentMessage = "";
     private messageQueue: string[] = [];
     public messages: WritableSignal<MessageFormat[]> = signal([]);
 
@@ -24,6 +23,8 @@ export class MessageService {
     private ws?: WebSocketService<MessageFormat>;
     private notificationService = inject(NotificationService);
     private zone = inject(NgZone);
+
+    private channelId: string | null = null;
 
     private callbacks = {
         onOpen: () => console.log("Messages connected"),
@@ -37,40 +38,44 @@ export class MessageService {
 
     constructor() {
         if (isPlatformBrowser(this.platformId)) {
-            sleep(1000).then(() => {
-                const token = localStorage.getItem("token") ?? "";
-                this.ws = new WebSocketService(extension, this.callbacks, [
-                    token,
-                    "b9889189-6940-4176-943f-98384f7015e9",
-                ]);
+            effect(() => {
+                const notif = this.notificationService.lastNotification();
+                if (notif?.header === "message_sent") {
+                    try {
+                        const raw = JSON.parse(notif.info['message']);
+                        const normalized: MessageFormat = {
+                            sender_id: notif.info['sender'],
+                            channel_id: notif.info['channel_id'],
+                            message: raw.message,
+                            created_at: new Date().toISOString(),
+                        };
+                        this.zone.run(() => {
+                            this.messages.update(list => [...list, normalized]);
+                        });
+                    } catch (e) {
+                        console.error("Error parsing notification message:", e);
+                    }
+                }
             });
-
-          effect(() => {
-              const notif = this.notificationService.lastNotification();
-              if (notif?.header === "message_sent") {
-                  try {
-                      const raw = JSON.parse(notif.info['message']);
-                      const normalized: MessageFormat = {
-                          sender_id: notif.info['sender'],
-                          channel_id: notif.info['channel_id'],
-                          message: raw.message,
-                          created_at: new Date().toISOString(),
-                      };
-                      this.zone.run(() => {
-                          this.messages.update(list => [...list, normalized]);
-                      });
-                  } catch (e) {
-                      console.error("❌ Error parsing notification message:", e);
-                  }
-              }
-          });
         }
+    }
+
+    init(channelId: string) {
+        if (!isPlatformBrowser(this.platformId)) return;
+        this.channelId = channelId;
+
+        sleep(1000).then(() => {
+            const token = localStorage.getItem("token") ?? "";
+            this.ws = new WebSocketService(extension, this.callbacks, [
+                token,
+                channelId
+            ]);
+        });
     }
 
     send(text: string) {
         const trimmed = text?.trim();
-        if (!trimmed) return;
-        this.lastSentMessage = trimmed;
+        if (!trimmed || !this.channelId) return;
         this.ws?.send({ message: trimmed });
         this.messageQueue.push(trimmed);
     }

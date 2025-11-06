@@ -1,4 +1,4 @@
-import { Component, inject, Input, WritableSignal} from "@angular/core";
+import { Component, inject, Input} from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import {
@@ -30,8 +30,11 @@ export class MessageComponent {
     currentUserId: string = "";
 
     ngOnInit() {
+        this.messages = this.messageService.messages;
+        this.messageService.init(this.channel_id); 
         this.loadMessages();
     }
+
     constructor() {}
 
     sendMessage() {
