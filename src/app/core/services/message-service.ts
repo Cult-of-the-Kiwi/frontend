@@ -1,6 +1,7 @@
-import { inject, Injectable, PLATFORM_ID, signal, WritableSignal } from "@angular/core";
+import { inject, Injectable, PLATFORM_ID, signal, WritableSignal, NgZone } from "@angular/core";
 import { WebSocketService } from "./websocket-service";
 import { isPlatformBrowser } from "@angular/common";
+import { NotificationService } from "./notification-service";
 
 export interface MessageFormat {
     id?: string;
@@ -22,6 +23,7 @@ export class MessageService {
 
     private platformId = inject(PLATFORM_ID);
     private ws: WebSocketService<MessageFormat> | undefined;
+    private notificationService = inject(NotificationService);
 
     private callbacks = {
         onOpen: () => console.log("Messages connected"),
@@ -42,6 +44,7 @@ export class MessageService {
                     "b9889189-6940-4176-943f-98384f7015e9",
                 ]);
             });
+            this.listenToNotifications();
         }
     }
 
@@ -52,4 +55,35 @@ export class MessageService {
         this.ws?.send({ message: trimmed }); // send plain text
         this.messageQueue.push(trimmed);
     }
+    private listenToNotifications() {
+  const zone = inject(NgZone); 
+
+  const originalHandler = (window as any)._notifHandler;
+  (window as any)._notifHandler = (data: any) => {
+    if (originalHandler) originalHandler(data);
+
+    if (data.header === "message_sent") {
+      try {
+        const raw = JSON.parse(data.info.message);
+        const normalized: MessageFormat = {
+          sender_id: data.info.sender,
+          channel_id: data.info.channel_id,
+          message: raw.message,
+          created_at: new Date().toISOString(),
+        };
+        zone.run(() => {
+          this.messages.update(list => {
+            console.log("Antes:", list);
+            const updated = [...list, normalized];
+            console.log("Después:", updated);
+            return updated;
+          });
+        });
+      } catch (e) {
+        console.error("❌ Error parsing notification message:", e);
+      }
+    }
+  };
+}
+
 }
