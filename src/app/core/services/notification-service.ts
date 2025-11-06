@@ -1,32 +1,31 @@
-import { inject, Injectable, PLATFORM_ID } from "@angular/core";
+import { inject, Injectable, PLATFORM_ID, signal, WritableSignal } from "@angular/core";
 import { WebSocketService } from "./websocket-service";
 import { isPlatformBrowser } from "@angular/common";
 
 const extension = "/ws/notification";
 
-const sleep = (ms: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-};
+const sleep = (ms: number): Promise<void> => new Promise(res => setTimeout(res, ms));
 
-export interface MessageFormat {
+export interface NotificationFormat {
     header: string;
-    info: Record<string, string>;
+    info: Record<string, any>;
 }
 
-@Injectable({
-    providedIn: "root",
-})
+@Injectable({ providedIn: "root" })
 export class NotificationService {
-    private websocketService: WebSocketService<MessageFormat> | undefined;
+    private websocketService?: WebSocketService<NotificationFormat>;
     private platformId = inject(PLATFORM_ID);
 
-    //Example of callbacks
+    public lastNotification: WritableSignal<NotificationFormat | null> = signal(null);
+
     private callbacks = {
-        //TODO:@AlexGarciaPrada Implement a way to notify the user
         onOpen: () => console.log("Notification connected"),
         onClose: (e: CloseEvent) => console.log(e),
-        onMessage: (data: MessageFormat) => console.log(data),
-        onError: (err: Event | Error) => console.error("panico",err),
+        onMessage: (data: NotificationFormat) => {
+            console.log(data);
+            this.lastNotification.set(data);
+        },
+        onError: (err: Event | Error) => console.error("panico", err),
     };
 
     constructor() {
