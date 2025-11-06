@@ -1,4 +1,4 @@
-import { inject, Injectable, PLATFORM_ID, signal, WritableSignal, NgZone } from "@angular/core";
+import { inject, Injectable, PLATFORM_ID, signal, WritableSignal, effect, NgZone } from "@angular/core";
 import { WebSocketService } from "./websocket-service";
 import { isPlatformBrowser } from "@angular/common";
 import { NotificationService } from "./notification-service";
@@ -12,25 +12,25 @@ export interface MessageFormat {
 }
 
 const extension = "/ws/message";
-const sleep = (ms: number): Promise<void> => {
-    return new Promise((resolve) => setTimeout(resolve, ms));
-};
+const sleep = (ms: number): Promise<void> => new Promise(res => setTimeout(res, ms));
+
 @Injectable({ providedIn: "root" })
 export class MessageService {
-    private lastSentMessage: string = "";
+    private lastSentMessage = "";
     private messageQueue: string[] = [];
     public messages: WritableSignal<MessageFormat[]> = signal([]);
 
     private platformId = inject(PLATFORM_ID);
-    private ws: WebSocketService<MessageFormat> | undefined;
+    private ws?: WebSocketService<MessageFormat>;
     private notificationService = inject(NotificationService);
+    private zone = inject(NgZone);
 
     private callbacks = {
         onOpen: () => console.log("Messages connected"),
         onClose: (e: CloseEvent) => console.log(e),
         onMessage: (data: MessageFormat) => {
-                    console.log("Message recieved",data);
-                    this.messages.update(list => [...list, data]);
+            console.log("Message received:", data);
+            this.messages.update(list => [...list, data]);
         },
         onError: (err: Event | Error) => console.error(err),
     };
@@ -44,7 +44,26 @@ export class MessageService {
                     "b9889189-6940-4176-943f-98384f7015e9",
                 ]);
             });
-            this.listenToNotifications();
+
+          effect(() => {
+              const notif = this.notificationService.lastNotification();
+              if (notif?.header === "message_sent") {
+                  try {
+                      const raw = JSON.parse(notif.info['message']);
+                      const normalized: MessageFormat = {
+                          sender_id: notif.info['sender'],
+                          channel_id: notif.info['channel_id'],
+                          message: raw.message,
+                          created_at: new Date().toISOString(),
+                      };
+                      this.zone.run(() => {
+                          this.messages.update(list => [...list, normalized]);
+                      });
+                  } catch (e) {
+                      console.error("❌ Error parsing notification message:", e);
+                  }
+              }
+          });
         }
     }
 
@@ -52,38 +71,7 @@ export class MessageService {
         const trimmed = text?.trim();
         if (!trimmed) return;
         this.lastSentMessage = trimmed;
-        this.ws?.send({ message: trimmed }); // send plain text
+        this.ws?.send({ message: trimmed });
         this.messageQueue.push(trimmed);
     }
-    private listenToNotifications() {
-  const zone = inject(NgZone); 
-
-  const originalHandler = (window as any)._notifHandler;
-  (window as any)._notifHandler = (data: any) => {
-    if (originalHandler) originalHandler(data);
-
-    if (data.header === "message_sent") {
-      try {
-        const raw = JSON.parse(data.info.message);
-        const normalized: MessageFormat = {
-          sender_id: data.info.sender,
-          channel_id: data.info.channel_id,
-          message: raw.message,
-          created_at: new Date().toISOString(),
-        };
-        zone.run(() => {
-          this.messages.update(list => {
-            console.log("Antes:", list);
-            const updated = [...list, normalized];
-            console.log("Después:", updated);
-            return updated;
-          });
-        });
-      } catch (e) {
-        console.error("❌ Error parsing notification message:", e);
-      }
-    }
-  };
-}
-
 }
