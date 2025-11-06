@@ -1,4 +1,4 @@
-import { Component, inject, Input } from "@angular/core";
+import { Component, inject, Input, WritableSignal, ChangeDetectorRef, effect } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import {
@@ -22,15 +22,22 @@ export class MessageComponent {
     messageInput = "";
     private requestService = inject(RequestService);
     private messageService = inject(MessageService);
-
-        messages = this.messageService.messages; // directly use the service signal
+    messages!: WritableSignal<MessageFormat[]>; 
+    private cdr = inject(ChangeDetectorRef); 
 
     currentUserId: string = "";
 
     ngOnInit() {
+        this.messages = this.messageService.messages;
         this.loadMessages();
     }
-    constructor() {}
+    constructor() {
+        effect(() => {
+      const msgs = this.messages();
+      console.log("Mensajes actualizados:", msgs);
+      this.cdr.markForCheck(); 
+    });
+    }
 
     sendMessage() {
         if (!this.messageInput.trim()) 
@@ -50,7 +57,7 @@ export class MessageComponent {
                 { Authorization: `Bearer ${token}` },
             );
             console.log(messages);
-            this.messages.set(messages);
+this.messageService.messages.update(() => messages);
         } catch (error) {
             console.warn(error);
         }

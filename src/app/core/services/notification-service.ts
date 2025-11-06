@@ -26,7 +26,7 @@ export class NotificationService {
         onOpen: () => console.log("Notification connected"),
         onClose: (e: CloseEvent) => console.log(e),
         onMessage: (data: MessageFormat) => console.log(data),
-        onError: (err: Event | Error) => console.error(err),
+        onError: (err: Event | Error) => console.error("panico",err),
     };
 
     constructor() {
