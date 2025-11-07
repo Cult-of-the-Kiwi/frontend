@@ -1,13 +1,21 @@
-import { inject, Injectable, PLATFORM_ID, signal, WritableSignal } from "@angular/core";
+import {
+    inject,
+    Injectable,
+    PLATFORM_ID,
+    signal,
+    WritableSignal,
+} from "@angular/core";
 import { WebSocketService } from "./websocket-service";
 import { isPlatformBrowser } from "@angular/common";
 
 const extension = "/ws/notification";
 
-const sleep = (ms: number): Promise<void> => new Promise(res => setTimeout(res, ms));
+const sleep = (ms: number): Promise<void> =>
+    new Promise((res) => setTimeout(res, ms));
 
 export interface NotificationFormat {
     header: string;
+    /* eslint-disable @typescript-eslint/no-explicit-any */
     info: Record<string, any>;
 }
 
@@ -16,7 +24,8 @@ export class NotificationService {
     private websocketService?: WebSocketService<NotificationFormat>;
     private platformId = inject(PLATFORM_ID);
 
-    public lastNotification: WritableSignal<NotificationFormat | null> = signal(null);
+    public lastNotification: WritableSignal<NotificationFormat | null> =
+        signal(null);
 
     private callbacks = {
         onOpen: () => console.log("Notification connected"),
