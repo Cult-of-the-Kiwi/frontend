@@ -1,4 +1,4 @@
-import { Component, inject, Input} from "@angular/core";
+import { Component, inject, Input } from "@angular/core";
 import { CommonModule } from "@angular/common";
 import { FormsModule } from "@angular/forms";
 import {
@@ -9,7 +9,6 @@ import {
     HttpMethod,
     RequestService,
 } from "../../../core/services/request-service";
-
 
 const extension = "message/";
 @Component({
@@ -26,20 +25,18 @@ export class MessageComponent {
     private messageService = inject(MessageService);
     messages = this.messageService.messages;
 
-
     currentUserId: string = "";
 
     ngOnInit() {
         this.messages = this.messageService.messages;
-        this.messageService.init(this.channel_id); 
+        this.messageService.init(this.channel_id);
         this.loadMessages();
     }
 
     constructor() {}
 
     sendMessage() {
-        if (!this.messageInput.trim()) 
-            return;
+        if (!this.messageInput.trim()) return;
         this.messageService.send(this.messageInput);
         this.messageInput = "";
     }
@@ -47,7 +44,9 @@ export class MessageComponent {
     async loadMessages() {
         const token = localStorage.getItem("token") ?? "";
         try {
-            const messages = await this.requestService.makeRequest<MessageFormat[]>(
+            const messages = await this.requestService.makeRequest<
+                MessageFormat[]
+            >(
                 extension + this.channel_id,
                 HttpMethod.GET,
                 "",
