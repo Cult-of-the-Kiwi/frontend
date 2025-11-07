@@ -40,7 +40,7 @@ export class MessageService {
         onClose: (e: CloseEvent) => console.log(e),
         onMessage: (data: MessageFormat) => {
             console.log("Message received:", data);
-            this.messages.update((list) => [...list, data]);
+            //this.messages.update((list) => [...list, data]);
         },
         onError: (err: Event | Error) => console.error(err),
     };
