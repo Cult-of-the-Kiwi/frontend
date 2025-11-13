@@ -90,5 +90,5 @@ export class MessageService {
         if (!trimmed || !this.channelId) return;
         this.ws?.send({ message: trimmed });
         this.messageQueue.push(trimmed);
-    }
+    }
 }
