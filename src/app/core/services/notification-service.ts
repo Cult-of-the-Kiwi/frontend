@@ -21,13 +21,13 @@ export interface NotificationFormat {
 
 @Injectable({ providedIn: "root" })
 export class NotificationService {
-    private websocketService?: WebSocketService<NotificationFormat>;
     private platformId = inject(PLATFORM_ID);
 
     public lastNotification: WritableSignal<NotificationFormat | null> =
         signal(null);
 
     private callbacks = {
+    //TODO:@AlexGarciaPrada Implement a way to notify the user
         onOpen: () => console.log("Notification connected"),
         onClose: (e: CloseEvent) => console.log(e),
         onMessage: (data: NotificationFormat) => {
@@ -41,7 +41,7 @@ export class NotificationService {
         if (isPlatformBrowser(this.platformId)) {
             sleep(1000).then(() => {
                 const token = localStorage.getItem("token") ?? "";
-                this.websocketService = new WebSocketService(
+                new WebSocketService(
                     extension,
                     this.callbacks,
                     token,
