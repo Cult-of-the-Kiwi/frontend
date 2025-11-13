@@ -27,7 +27,7 @@ export class NotificationService {
         signal(null);
 
     private callbacks = {
-    //TODO:@AlexGarciaPrada Implement a way to notify the user
+        //TODO:@AlexGarciaPrada Implement a way to notify the user
         onOpen: () => console.log("Notification connected"),
         onClose: (e: CloseEvent) => console.log(e),
         onMessage: (data: NotificationFormat) => {
@@ -41,11 +41,7 @@ export class NotificationService {
         if (isPlatformBrowser(this.platformId)) {
             sleep(1000).then(() => {
                 const token = localStorage.getItem("token") ?? "";
-                new WebSocketService(
-                    extension,
-                    this.callbacks,
-                    token,
-                );
+                new WebSocketService(extension, this.callbacks, token);
             });
         }
     }
