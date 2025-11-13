@@ -47,6 +47,8 @@ export class WebSocketService<T> {
     private readonly onMessage?: MessageCallback<T>;
     private readonly onError?: ErrorCallback;
 
+    manualClose = false;
+
     constructor(
         extension: string,
         callbacks?: WebSocketCallbacks<T>,
@@ -72,10 +74,26 @@ export class WebSocketService<T> {
     private stopKeepAlive() {
         if (this.keepAliveInterval) clearInterval(this.keepAliveInterval);
     }
+    public disconnect(): void {
+        console.log("WebSocket manual disconnect called:", this.extension);
+        this.manualClose = true;
+
+        this.stopKeepAlive();
+        if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
+        if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+            this.socket.close(1000, "Client disconnected");
+        }
+
+        this.messageSubject.complete();
+    }
 
     private reconnectWithBackoff() {
         if (this.reconnectTimeout) clearTimeout(this.reconnectTimeout);
 
+        if (this.manualClose) {
+            console.log("Manual close detected — skipping reconnection.");
+            return;
+        }
         const delay = Math.min(
             1000 * Math.pow(2, this.reconnectAttempts),
             30000,
