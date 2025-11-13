@@ -1,34 +1,52 @@
-import { Injectable } from "@angular/core";
+import {
+    inject,
+    Injectable,
+    PLATFORM_ID,
+    signal,
+    WritableSignal,
+} from "@angular/core";
 import { WebSocketService } from "./websocket-service";
+import { isPlatformBrowser } from "@angular/common";
 
 const extension = "/ws/notification";
 
-export interface MessageFormat {
+const sleep = (ms: number): Promise<void> =>
+    new Promise((res) => setTimeout(res, ms));
+
+export interface NotificationFormat {
     header: string;
-    info: Record<string, string>;
+    /* eslint-disable @typescript-eslint/no-explicit-any */
+    info: Record<string, any>;
 }
 
-@Injectable({
-    providedIn: "root",
-})
+@Injectable({ providedIn: "root" })
 export class NotificationService {
-    private websocketService: WebSocketService<MessageFormat>;
+    private websocketService?: WebSocketService<NotificationFormat>;
+    private platformId = inject(PLATFORM_ID);
 
-    //Example of callbacks
+    public lastNotification: WritableSignal<NotificationFormat | null> =
+        signal(null);
+
     private callbacks = {
-        //TODO:@AlexGarciaPrada Implement a way to notify the user
         onOpen: () => console.log("Notification connected"),
         onClose: (e: CloseEvent) => console.log(e),
-        onMessage: (data: MessageFormat) => console.log(data),
-        onError: (err: Event | Error) => console.error(err),
+        onMessage: (data: NotificationFormat) => {
+            console.log(data);
+            this.lastNotification.set(data);
+        },
+        onError: (err: Event | Error) => console.error("panico", err),
     };
 
     constructor() {
-        const token = localStorage.getItem("token") ?? "";
-        this.websocketService = new WebSocketService(
-            extension,
-            this.callbacks,
-            token,
-        );
-    }
+        if (isPlatformBrowser(this.platformId)) {
+            sleep(1000).then(() => {
+                const token = localStorage.getItem("token") ?? "";
+                this.websocketService = new WebSocketService(
+                    extension,
+                    this.callbacks,
+                    token,
+                );
+            });
+        }
+    }
 }
