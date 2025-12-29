@@ -6,7 +6,6 @@ import { GroupPage } from "./pages/group/group.page";
 import { CallPage } from "./pages/call/call.page";
 import { MainMenuPage } from "./pages/main-menu/main-menu.page";
 
-//TODO: @AlexGarciaPrada Friendships and Co are pages, components??
 export const routes: Routes = [
     {path:"main-menu",component:MainMenuPage},
     { path: "register", component: RegisterPage },

@@ -14,6 +14,7 @@ import {
     GroupDialogInterface,
 } from "../../components/group-dialog/group-dialog.component";
 import { HttpMethod, RequestService } from "../../../../services/request-service";
+import { MainMenuInfoService } from "../../../../services/main-menu-info.service";
 
 const errorCtx = "group-creation";
 
@@ -25,6 +26,7 @@ const errorCtx = "group-creation";
     styleUrls: ["./group-creation.component.scss"],
 })
 export class GroupCreationComponent {
+    mainMenuService = inject(MainMenuInfoService);
     private dialog = inject(MatDialog);
     loading = false;
 
@@ -112,9 +114,7 @@ export class GroupCreationComponent {
             );
 
             dialogRef.afterClosed().subscribe((result) => {
-                if (result?.status === "group-created") {
-                    this.groupCreated.emit(result.groupId);
-                }
+                this.mainMenuService.addGroup(result);
             });
         } catch (err) {
             console.error("Error opening friend selector dialog:", err);

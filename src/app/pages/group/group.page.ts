@@ -1,11 +1,11 @@
 import { Component, inject } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
 import { MemberListComponent } from "../../features/groups/components/member-list/member-list.component";
-import { AddUserComponent } from "../../features/groups/dialogs/add-user/add-user.component";
 import { CommonModule } from "@angular/common";
 import { CallButtonComponent } from "../../features/calls/call-button/call-button.component";
 import { RemoveUserComponent } from "../../features/groups/components/remove-user/remove-user.component";
 import { HttpMethod, RequestService } from "../../services/request-service";
+import { AddUserComponent } from "../../features/groups/components/add-user/add-user.component";
 
 //TODO: @AlexGarciaPrada make it dialog
 

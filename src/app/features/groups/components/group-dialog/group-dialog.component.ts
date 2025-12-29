@@ -94,8 +94,6 @@ export class GroupDialogComponent {
             this.router.navigate([
                 this.data.finalRoute ?? "group/" + this.data.groupId,
             ]);
-            //TODO: @AlexGarciaPrada Update this
-            window.location.reload();
         } catch (error) {
             console.log(error);
         }
