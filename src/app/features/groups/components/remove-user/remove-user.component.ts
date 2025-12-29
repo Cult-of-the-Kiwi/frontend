@@ -4,7 +4,8 @@ import {
     GroupDialogComponent,
     GroupDialogInterface,
 } from "../group-dialog/group-dialog.component";
-import { HttpMethod } from "../../../../core/services/request-service";
+import { HttpMethod } from "../../../../services/request-service";
+
 
 @Component({
     selector: "remove-user",

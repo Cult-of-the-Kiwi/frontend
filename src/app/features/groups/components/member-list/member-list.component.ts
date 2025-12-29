@@ -8,10 +8,8 @@ import {
     Output,
     PLATFORM_ID,
 } from "@angular/core";
-import {
-    HttpMethod,
-    RequestService,
-} from "../../../../core/services/request-service";
+import { HttpMethod, RequestService } from "../../../../services/request-service";
+
 
 //TODO: @AlexGarciaPrada Remade with signals
 const errorCtx = "member-list";

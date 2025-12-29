@@ -1,0 +1,9 @@
+<h1>{{ groupId }}</h1>
+
+<member-list [groupId]="groupId" (eventMembersLoaded)="activateMembersLoaded($event)"></member-list>
+
+<ng-container *ngIf="membersLoaded">
+  <remove-user [members]="members" [groupId]="groupId"></remove-user>
+  <add-user [members]="members" [groupId]="groupId"></add-user>
+  <call-button [groupId] ="groupId"></call-button>
+</ng-container>
