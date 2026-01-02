@@ -13,6 +13,6 @@ export class CallButtonComponent {
     private router = inject(Router);
 
     startCall() {
-        this.router.navigate(["group/" + this.groupId + "/call"]);
+        this.router.navigate([`group/${this.groupId}/call`]);
     }
 }

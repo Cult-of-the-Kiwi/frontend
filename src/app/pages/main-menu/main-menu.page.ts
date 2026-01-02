@@ -1,5 +1,5 @@
 import { Component} from "@angular/core";
-import { GroupContainerComponent } from "../../features/groups/components/group-container.component/group-container.component";
+import { GroupContainerComponent } from "../../features/groups/components/group-container/group-container.component";
 import { GroupCreationComponent } from "../../features/groups/components/group-creation/group-creation.component";
 
 

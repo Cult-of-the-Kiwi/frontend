@@ -1,8 +1,9 @@
-import { Component, ElementRef, ViewChild } from "@angular/core";
-import { ActivatedRoute } from "@angular/router";
+import { Component, ElementRef, inject, Inject, PLATFORM_ID, ViewChild } from "@angular/core";
+import { ActivatedRoute, Router } from "@angular/router";
 import { WebSocketService } from "../../services/websocket-service";
+import { isPlatformBrowser } from "@angular/common";
 
-//Fill it with the actual extension
+// WebSocket extension
 const extension = "/ws/call";
 
 export enum WebSocketMessageType {
@@ -16,23 +17,16 @@ export enum WebSocketMessageType {
 
 type MessageFormat =
     | { type: WebSocketMessageType.ConnectToRoom; room_id: string }
-    | {
-          type: WebSocketMessageType.RTCCandidate;
-          candidate: RTCIceCandidateInit;
-      }
-    | {
-          type: WebSocketMessageType.RTCAnswer;
-          answer: RTCSessionDescriptionInit;
-      }
+    | { type: WebSocketMessageType.RTCCandidate; candidate: RTCIceCandidateInit }
+    | { type: WebSocketMessageType.RTCAnswer; answer: RTCSessionDescriptionInit }
     | { type: WebSocketMessageType.Offer; sdp: string }
     | { type: WebSocketMessageType.Answer; sdp: string }
     | { type: WebSocketMessageType.Candidate; candidate: RTCIceCandidateInit };
 
 @Component({
     selector: "call",
-    imports: [],
     templateUrl: "./call.page.html",
-    styleUrl: "./call.page.scss",
+    styleUrls: ["./call.page.scss"],
 })
 export class CallPage {
     @ViewChild("localVideo", { static: true })
@@ -40,60 +34,63 @@ export class CallPage {
     @ViewChild("remoteMediaContainer", { static: true })
     remoteMediaContainerRef!: ElementRef<HTMLDivElement>;
 
+    //This is not angular20
+    private route = inject(ActivatedRoute);
+
+    private platformId: Object;
+    private token = "";
+    private websocketService!: WebSocketService<MessageFormat>;
     private groupId = "";
 
-    private websocketService: WebSocketService<MessageFormat>;
-
-    //This is a way I found to do it (the function were too large (eso dijo ella))
-    private callbacks = {
-        onOpen: this.handleOpen.bind(this),
-        onMessage: this.handleMessage.bind(this),
-    };
-
-    //For getting the id, neccesary for making the room
-    ngOnInit() {
-        this.route.params.subscribe((params) => {
-            this.groupId = params["groupId"];
-            console.log("GroupId:", this.groupId);
-        });
-    }
     private localStream!: MediaStream;
     private peerConnection!: RTCPeerConnection;
     private remoteStreams = new Map<string, MediaStream>();
-
-    public cameraOn = true;
+    public cameraOn = false;
     public micOn = true;
 
     private configuration: RTCConfiguration = {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
     };
 
-    constructor(private route: ActivatedRoute) {
-        const token = localStorage.getItem("token") ?? "";
-        this.websocketService = new WebSocketService(
-            extension,
-            this.callbacks,
-            token,
-        );
+    private callbacks = {
+        onOpen: this.handleOpen.bind(this),
+        onMessage: this.handleMessage.bind(this),
+    };
+
+    constructor(@Inject(PLATFORM_ID) platformId: Object) {
+        this.platformId = platformId;
+
+        //localstorage is key
+        if (isPlatformBrowser(this.platformId)) {
+            this.token = localStorage.getItem("token") ?? "";
+        }
+    }
+
+    ngOnInit() {
+        // Just in bowser (Mario Bros guy)
+        if (!isPlatformBrowser(this.platformId)) return;
+
+        this.groupId = this.route.snapshot.paramMap.get("groupId")!;
+
+        this.websocketService = new WebSocketService(extension, this.callbacks, this.token);
     }
 
     async handleOpen() {
-        //TODO: @AlexGarciaPrada See this, navigator not defined
-        // eslint-disable-next-line
+        if (!isPlatformBrowser(this.platformId)) return;
+
         this.localStream = await navigator.mediaDevices.getUserMedia({
-            video: true,
+            video: false,
             audio: true,
         });
+
         this.localVideoRef.nativeElement.srcObject = this.localStream;
         this.localVideoRef.nativeElement.muted = true;
 
         this.peerConnection = new RTCPeerConnection(this.configuration);
 
-        this.localStream
-            .getTracks()
-            .forEach((track) =>
-                this.peerConnection.addTrack(track, this.localStream),
-            );
+        this.localStream.getTracks().forEach((track) =>
+            this.peerConnection.addTrack(track, this.localStream)
+        );
 
         let counter = 0;
         this.peerConnection.ontrack = (event) => {
@@ -115,21 +112,14 @@ export class CallPage {
                 video.autoplay = true;
                 video.playsInline = true;
                 video.srcObject = stream;
-
-                video.onloadedmetadata = () => {
-                    video
-                        .play()
-                        .catch((err) => console.warn("Video play error:", err));
-                };
+                video.onloadedmetadata = () => video.play().catch(console.warn);
 
                 const label = document.createElement("div");
                 label.textContent = `Usuario: ${userId}`;
 
                 container.appendChild(label);
                 container.appendChild(video);
-                this.remoteMediaContainerRef.nativeElement.appendChild(
-                    container,
-                );
+                this.remoteMediaContainerRef.nativeElement.appendChild(container);
             }
         };
 
@@ -141,7 +131,6 @@ export class CallPage {
                 });
             }
         };
-
         this.websocketService.send({
             type: WebSocketMessageType.ConnectToRoom,
             room_id: this.groupId,
@@ -149,48 +138,29 @@ export class CallPage {
     }
 
     async handleMessage(data: MessageFormat) {
+        if (!isPlatformBrowser(this.platformId)) return;
+
         if (data.type === "offer") {
-            await this.peerConnection.setRemoteDescription(
-                new RTCSessionDescription(data),
-            );
+            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data));
             const answer = await this.peerConnection.createAnswer();
             await this.peerConnection.setLocalDescription(answer);
-            this.websocketService.send({
-                type: WebSocketMessageType.RTCAnswer,
-                answer,
-            });
+            this.websocketService.send({ type: WebSocketMessageType.RTCAnswer, answer });
         } else if (data.type === "candidate") {
-            console.log(data);
-            await this.peerConnection.addIceCandidate(
-                new RTCIceCandidate(data.candidate),
-            );
+            await this.peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
         }
     }
 
-    //TODO: @AlexGarciaPrada This only stop sending but still captures
     toggleCamera() {
         if (!this.localStream) return;
         this.cameraOn = !this.cameraOn;
-        this.localStream.getVideoTracks().forEach((track) => {
-            track.enabled = this.cameraOn;
-        });
-        if (this.cameraOn) {
-            console.log("Camera On");
-        } else {
-            console.log("Camera Off");
-        }
+        this.localStream.getVideoTracks().forEach((track) => (track.enabled = this.cameraOn));
+        console.log(this.cameraOn ? "Camera On" : "Camera Off");
     }
 
     toggleMic() {
         if (!this.localStream) return;
         this.micOn = !this.micOn;
-        this.localStream.getAudioTracks().forEach((track) => {
-            track.enabled = this.micOn;
-        });
-        if (this.micOn) {
-            console.log("Voice On");
-        } else {
-            console.log("Voice Off");
-        }
+        this.localStream.getAudioTracks().forEach((track) => (track.enabled = this.micOn));
+        console.log(this.micOn ? "Voice On" : "Voice Off");
     }
 }
