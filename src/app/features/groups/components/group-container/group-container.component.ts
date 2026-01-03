@@ -1,5 +1,4 @@
-import { isPlatformBrowser } from '@angular/common';
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
 import { MainMenuInfoService } from '../../../../services/main-menu-info.service';
 
@@ -16,12 +15,14 @@ export class GroupContainerComponent {
 
 
 
-
+    groups = signal<string[]>([]);
     private mainMenuService = inject(MainMenuInfoService);
     private router = inject(Router);
 
-    groups = this.mainMenuService.getGroupsSignal();
-
+    ngOnInit(){
+        this.mainMenuService.loadGroups();
+        this.groups = this.mainMenuService.getGroupsSignal();
+    }
     goToGroup(groupId: string) {
         this.router.navigate([`group/${groupId}`]);
     }

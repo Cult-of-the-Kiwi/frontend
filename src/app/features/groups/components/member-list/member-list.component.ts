@@ -3,6 +3,7 @@ import {
     Component,
     inject,
     Input,
+    signal,
     SimpleChanges,
 } from "@angular/core";
 import { GroupInfoService } from "../../../../services/group-info-service";
@@ -19,15 +20,15 @@ import { GroupInfoService } from "../../../../services/group-info-service";
 export class MemberListComponent {
 
     @Input() groupId!: string;
+
+    members = signal<String[]>([]);
     private groupService = inject(GroupInfoService);
-    members = this.groupService.getMembersSignal();
-    
-    //This is a shitty solution
-    ngOnChanges(changes: SimpleChanges) {        
-        if (changes['groupId'] && this.groupId) {
-            this.groupService.loadMembers(this.groupId);
-        }
+    ngOnInit(){
+        this.members = this.groupService.getMembersSignal();
     }
+
+    
+
 
     
 }

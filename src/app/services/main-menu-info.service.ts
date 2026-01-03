@@ -14,7 +14,6 @@ export class MainMenuInfoService {
     error: string | null = null;
 
     constructor() {
-        this.loadGroups();
     }
 
     async loadGroups(): Promise<void> {
