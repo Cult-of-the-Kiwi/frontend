@@ -3,37 +3,38 @@ import { HttpMethod, RequestService } from "./request-service";
 import { isPlatformBrowser } from "@angular/common";
 
 @Injectable({
-  providedIn: 'root'
+    providedIn: "root",
 })
-
-export class GroupInfoService{
-
+export class GroupInfoService {
     private platformId = inject(PLATFORM_ID);
     private requestService = inject(RequestService);
 
     error: string | null = null;
     members = signal<string[]>([]);
 
-    setMembers(memberIds:string[]){
+    setMembers(memberIds: string[]) {
         this.members.set(memberIds);
     }
 
-    public addMember(memberId:string){
-        this.members.set([...this.members(),memberId]);
-        console.log(this.members())
+    public addMember(memberId: string) {
+        this.members.set([...this.members(), memberId]);
+        console.log(this.members());
     }
 
-    getMembersSignal(){
+    getMembersSignal() {
         return this.members;
     }
+    //With filter I had full loops, I think that is not what the map addict what
+    deleteUser(memberId: string) {
+        this.members.update((members) => {
+            const index = members.indexOf(memberId);
+            if (index === -1) return members;
 
-    deleteUser(memberId:string){
-        this.members.set(this.members().filter((id)=>{
-            id !== memberId;
-        }));
+            return [...members.slice(0, index), ...members.slice(index + 1)];
+        });
     }
 
-    async loadMembers(groupId:string): Promise<void> {
+    async loadMembers(groupId: string): Promise<void> {
         this.setMembers([]);
         const errorCtx = "member-list";
 
@@ -60,13 +61,9 @@ export class GroupInfoService{
                 { Authorization: `Bearer ${token}` },
                 { from: "0", to: "20" },
             );
-            if (data){
+            if (data) {
                 this.setMembers(data);
             }
-            else{
-
-            }
-            
         } catch (err) {
             console.log(err);
         }

@@ -7,7 +7,6 @@ import {
 import { HttpMethod } from "../../../../services/request-service";
 import { GroupInfoService } from "../../../../services/group-info-service";
 
-
 @Component({
     selector: "remove-user",
     imports: [],

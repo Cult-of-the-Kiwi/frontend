@@ -15,8 +15,10 @@ import {
 import { Router } from "@angular/router";
 import { GroupUserListComponent } from "./group-user-list/group-user-list.component";
 import { MatButtonModule } from "@angular/material/button";
-import { HttpMethod, RequestService } from "../../../../services/request-service";
-
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../services/request-service";
 
 //This is a generic dialog for the group operations. Yes, OOP entered in the frontend team
 

@@ -1,5 +1,12 @@
-import { Component, ElementRef, inject, Inject, PLATFORM_ID, ViewChild } from "@angular/core";
-import { ActivatedRoute, Router } from "@angular/router";
+import {
+    Component,
+    ElementRef,
+    inject,
+    Inject,
+    PLATFORM_ID,
+    ViewChild,
+} from "@angular/core";
+import { ActivatedRoute } from "@angular/router";
 import { WebSocketService } from "../../services/websocket-service";
 import { isPlatformBrowser } from "@angular/common";
 
@@ -17,8 +24,14 @@ export enum WebSocketMessageType {
 
 type MessageFormat =
     | { type: WebSocketMessageType.ConnectToRoom; room_id: string }
-    | { type: WebSocketMessageType.RTCCandidate; candidate: RTCIceCandidateInit }
-    | { type: WebSocketMessageType.RTCAnswer; answer: RTCSessionDescriptionInit }
+    | {
+          type: WebSocketMessageType.RTCCandidate;
+          candidate: RTCIceCandidateInit;
+      }
+    | {
+          type: WebSocketMessageType.RTCAnswer;
+          answer: RTCSessionDescriptionInit;
+      }
     | { type: WebSocketMessageType.Offer; sdp: string }
     | { type: WebSocketMessageType.Answer; sdp: string }
     | { type: WebSocketMessageType.Candidate; candidate: RTCIceCandidateInit };
@@ -37,7 +50,7 @@ export class CallPage {
     //This is not angular20
     private route = inject(ActivatedRoute);
 
-    private platformId: Object;
+    private platformId: object;
     private token = "";
     private websocketService!: WebSocketService<MessageFormat>;
     private groupId = "";
@@ -57,7 +70,7 @@ export class CallPage {
         onMessage: this.handleMessage.bind(this),
     };
 
-    constructor(@Inject(PLATFORM_ID) platformId: Object) {
+    constructor(@Inject(PLATFORM_ID) platformId: object) {
         this.platformId = platformId;
 
         //localstorage is key
@@ -72,25 +85,32 @@ export class CallPage {
 
         this.groupId = this.route.snapshot.paramMap.get("groupId")!;
 
-        this.websocketService = new WebSocketService(extension, this.callbacks, this.token);
+        this.websocketService = new WebSocketService(
+            extension,
+            this.callbacks,
+            this.token,
+        );
     }
 
     async handleOpen() {
-        if (!isPlatformBrowser(this.platformId)) return;
-
-        this.localStream = await navigator.mediaDevices.getUserMedia({
-            video: false,
-            audio: true,
-        });
+        if (isPlatformBrowser(this.platformId)) {
+            const nav = window.navigator;
+            this.localStream = await nav.mediaDevices.getUserMedia({
+                video: false,
+                audio: true,
+            });
+        }
 
         this.localVideoRef.nativeElement.srcObject = this.localStream;
         this.localVideoRef.nativeElement.muted = true;
 
         this.peerConnection = new RTCPeerConnection(this.configuration);
 
-        this.localStream.getTracks().forEach((track) =>
-            this.peerConnection.addTrack(track, this.localStream)
-        );
+        this.localStream
+            .getTracks()
+            .forEach((track) =>
+                this.peerConnection.addTrack(track, this.localStream),
+            );
 
         let counter = 0;
         this.peerConnection.ontrack = (event) => {
@@ -119,7 +139,9 @@ export class CallPage {
 
                 container.appendChild(label);
                 container.appendChild(video);
-                this.remoteMediaContainerRef.nativeElement.appendChild(container);
+                this.remoteMediaContainerRef.nativeElement.appendChild(
+                    container,
+                );
             }
         };
 
@@ -141,26 +163,37 @@ export class CallPage {
         if (!isPlatformBrowser(this.platformId)) return;
 
         if (data.type === "offer") {
-            await this.peerConnection.setRemoteDescription(new RTCSessionDescription(data));
+            await this.peerConnection.setRemoteDescription(
+                new RTCSessionDescription(data),
+            );
             const answer = await this.peerConnection.createAnswer();
             await this.peerConnection.setLocalDescription(answer);
-            this.websocketService.send({ type: WebSocketMessageType.RTCAnswer, answer });
+            this.websocketService.send({
+                type: WebSocketMessageType.RTCAnswer,
+                answer,
+            });
         } else if (data.type === "candidate") {
-            await this.peerConnection.addIceCandidate(new RTCIceCandidate(data.candidate));
+            await this.peerConnection.addIceCandidate(
+                new RTCIceCandidate(data.candidate),
+            );
         }
     }
 
     toggleCamera() {
         if (!this.localStream) return;
         this.cameraOn = !this.cameraOn;
-        this.localStream.getVideoTracks().forEach((track) => (track.enabled = this.cameraOn));
+        this.localStream
+            .getVideoTracks()
+            .forEach((track) => (track.enabled = this.cameraOn));
         console.log(this.cameraOn ? "Camera On" : "Camera Off");
     }
 
     toggleMic() {
         if (!this.localStream) return;
         this.micOn = !this.micOn;
-        this.localStream.getAudioTracks().forEach((track) => (track.enabled = this.micOn));
+        this.localStream
+            .getAudioTracks()
+            .forEach((track) => (track.enabled = this.micOn));
         console.log(this.micOn ? "Voice On" : "Voice Off");
     }
 }

@@ -1,7 +1,6 @@
 import { Observable, Subject } from "rxjs";
 import { SERVER_ROUTE } from "../../environment/environment.secret";
 
-
 /**
  * WebSocketService<T>
  *

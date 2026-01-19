@@ -1,9 +1,12 @@
 import { Component, inject } from "@angular/core";
-import { ReactiveFormsModule, FormBuilder, Validators, FormControl, FormGroup } from "@angular/forms";
+import {
+    ReactiveFormsModule,
+    Validators,
+    FormControl,
+    FormGroup,
+} from "@angular/forms";
 import { Router } from "@angular/router";
 import { HttpMethod, RequestService } from "../../../services/request-service";
-
-
 
 const errorCtx = "register";
 
@@ -31,24 +34,23 @@ interface RegisterRequestResponse {
     styleUrls: ["./register.page.scss"],
 })
 export class RegisterPage {
-
     private router = inject(Router);
     private requestService = inject(RequestService);
 
     registerForm = new FormGroup({
-        username: new FormControl('', {
+        username: new FormControl("", {
             validators: Validators.required,
             nonNullable: true,
         }),
-        password: new FormControl('', {
+        password: new FormControl("", {
             validators: Validators.required,
             nonNullable: true,
         }),
-       email: new FormControl('', {
+        email: new FormControl("", {
             validators: Validators.required,
             nonNullable: true,
         }),
-        telephone: new FormControl('', {
+        telephone: new FormControl("", {
             validators: Validators.required,
             nonNullable: true,
         }),

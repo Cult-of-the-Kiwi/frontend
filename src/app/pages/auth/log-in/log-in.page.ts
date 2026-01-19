@@ -1,8 +1,12 @@
 import { Component, inject } from "@angular/core";
-import { ReactiveFormsModule, Validators, FormGroup, FormControl } from "@angular/forms";
+import {
+    ReactiveFormsModule,
+    Validators,
+    FormGroup,
+    FormControl,
+} from "@angular/forms";
 import { Router } from "@angular/router";
 import { HttpMethod, RequestService } from "../../../services/request-service";
-
 
 interface LoginRequestResponse {
     token: string;
@@ -28,18 +32,17 @@ export class LogInPage {
     private requestService = inject(RequestService);
 
     loginForm = new FormGroup({
-        username: new FormControl('', {
+        username: new FormControl("", {
             validators: Validators.required,
             nonNullable: true,
         }),
-        password: new FormControl('', {
+        password: new FormControl("", {
             validators: Validators.required,
             nonNullable: true,
         }),
     });
 
     async onSubmit(): Promise<void> {
-
         if (this.loginForm.invalid) {
             return;
         }

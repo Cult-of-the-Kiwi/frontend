@@ -1,14 +1,6 @@
-import { CommonModule} from "@angular/common";
-import {
-    Component,
-    inject,
-    Input,
-    signal,
-    SimpleChanges,
-} from "@angular/core";
+import { CommonModule } from "@angular/common";
+import { Component, inject, Input, signal } from "@angular/core";
 import { GroupInfoService } from "../../../../services/group-info-service";
-
-
 
 @Component({
     selector: "member-list",
@@ -18,17 +10,11 @@ import { GroupInfoService } from "../../../../services/group-info-service";
     styleUrl: "./member-list.component.scss",
 })
 export class MemberListComponent {
-
     @Input() groupId!: string;
 
-    members = signal<String[]>([]);
+    members = signal<string[]>([]);
     private groupService = inject(GroupInfoService);
-    ngOnInit(){
+    ngOnInit() {
         this.members = this.groupService.getMembersSignal();
     }
-
-    
-
-
-    
 }

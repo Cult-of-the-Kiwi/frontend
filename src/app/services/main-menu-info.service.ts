@@ -3,18 +3,15 @@ import { inject, Injectable, PLATFORM_ID, signal } from "@angular/core";
 import { HttpMethod, RequestService } from "./request-service";
 
 @Injectable({
-    providedIn: 'root'
+    providedIn: "root",
 })
-
 export class MainMenuInfoService {
-
     groups = signal<string[]>([]);
     private platformId = inject(PLATFORM_ID);
     private requestService = inject(RequestService);
     error: string | null = null;
 
-    constructor() {
-    }
+    constructor() {}
 
     async loadGroups(): Promise<void> {
         const errorCtx = "user-groups";
@@ -35,16 +32,12 @@ export class MainMenuInfoService {
         try {
             const data = await this.requestService.makeRequest<
                 { id: string }[]
-            >(
-                "group/user-groups",
-                HttpMethod.GET,
-                errorCtx,
-                undefined,
-                { Authorization: `Bearer ${token}` },
-            );
+            >("group/user-groups", HttpMethod.GET, errorCtx, undefined, {
+                Authorization: `Bearer ${token}`,
+            });
 
             if (data) {
-                this.setGroups(data.map((group) => (group.id)));
+                this.setGroups(data.map((group) => group.id));
             }
         } catch {
             console.log("grouploader not working");
@@ -57,7 +50,7 @@ export class MainMenuInfoService {
 
     public addGroup(groupId: string) {
         this.groups.set([...this.groups(), groupId]);
-        console.log(this.groups())
+        console.log(this.groups());
     }
 
     getGroupsSignal() {

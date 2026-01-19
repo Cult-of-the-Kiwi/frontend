@@ -5,9 +5,11 @@ import {
     GroupDialogComponent,
     GroupDialogInterface,
 } from "../../components/group-dialog/group-dialog.component";
-import { HttpMethod, RequestService } from "../../../../services/request-service";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../services/request-service";
 import { GroupInfoService } from "../../../../services/group-info-service";
-
 
 const errorCtx = "add-user";
 

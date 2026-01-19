@@ -7,7 +7,7 @@ import { CallPage } from "./pages/call/call.page";
 import { MainMenuPage } from "./pages/main-menu/main-menu.page";
 
 export const routes: Routes = [
-    {path:"main-menu",component:MainMenuPage},
+    { path: "main-menu", component: MainMenuPage },
     { path: "register", component: RegisterPage },
     { path: "login", component: LogInPage },
     { path: "home", component: HomePage },

@@ -1,25 +1,19 @@
-import { Component, inject, signal } from '@angular/core';
-import { Router } from '@angular/router';
-import { MainMenuInfoService } from '../../../../services/main-menu-info.service';
-
-
-
+import { Component, inject, signal } from "@angular/core";
+import { Router } from "@angular/router";
+import { MainMenuInfoService } from "../../../../services/main-menu-info.service";
 
 @Component({
-    selector: 'app-group-container',
+    selector: "app-group-container",
     imports: [],
-    templateUrl: './group-container.component.html',
-    styleUrl: './group-container.component.scss'
+    templateUrl: "./group-container.component.html",
+    styleUrl: "./group-container.component.scss",
 })
 export class GroupContainerComponent {
-
-
-
     groups = signal<string[]>([]);
     private mainMenuService = inject(MainMenuInfoService);
     private router = inject(Router);
 
-    ngOnInit(){
+    ngOnInit() {
         this.mainMenuService.loadGroups();
         this.groups = this.mainMenuService.getGroupsSignal();
     }

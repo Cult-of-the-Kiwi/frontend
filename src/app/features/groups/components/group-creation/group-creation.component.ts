@@ -13,7 +13,10 @@ import {
     GroupDialogComponent,
     GroupDialogInterface,
 } from "../../components/group-dialog/group-dialog.component";
-import { HttpMethod, RequestService } from "../../../../services/request-service";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../services/request-service";
 import { MainMenuInfoService } from "../../../../services/main-menu-info.service";
 
 const errorCtx = "group-creation";
