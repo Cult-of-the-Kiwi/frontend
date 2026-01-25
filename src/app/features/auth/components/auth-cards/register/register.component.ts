@@ -58,11 +58,11 @@ export class Register {
             nonNullable: true,
         }),
         email: new FormControl("", {
-            validators: Validators.required,
+            validators: [Validators.required, Validators.email],
             nonNullable: true,
         }),
         telephone: new FormControl("", {
-            validators: Validators.required,
+            validators: Validators.pattern("^[0-9]{9}$"),
             nonNullable: true,
         }),
     });
