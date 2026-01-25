@@ -1,0 +1,50 @@
+
+.auth-container {
+  min-height: 60vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 3rem;
+  padding: 2rem;
+}
+
+
+.auth-card {
+  width: 380px;
+  max-width: 100%;
+  padding: 2rem 2.5rem;
+  border-radius: 16px;
+}
+
+
+.auth-card mat-card-title {
+  text-align: center;
+  margin-bottom: 1.5rem;
+  font-size: 1.6rem;
+  font-weight: 600;
+}
+
+.auth-card form {
+  display: flex;
+  flex-direction: column;
+}
+
+mat
+button {
+  margin-top: 1.5rem;
+  height: 48px;
+  font-size: 1rem;
+  border-radius: 8px;
+}
+
+
+@media (max-width: 900px) {
+  .auth-container {
+    flex-direction: column;
+  }
+
+  .auth-card {
+    width: 100%;
+    max-width: 420px;
+  }
+}

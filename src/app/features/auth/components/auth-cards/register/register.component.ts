@@ -6,11 +6,16 @@ import {
     FormGroup,
 } from "@angular/forms";
 import { Router } from "@angular/router";
-import { HttpMethod, RequestService } from "../../../services/request-service";
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../../services/request-service";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { MatButtonModule } from "@angular/material/button";
 
 const errorCtx = "register";
-
-//TODO: @AlexGarciaPrada Redo this forms also to avoid this null|undefined stuff
 
 interface RegisterRequestBody {
     username: string;
@@ -29,11 +34,17 @@ interface RegisterRequestResponse {
 
 @Component({
     selector: "register",
-    imports: [ReactiveFormsModule],
-    templateUrl: "./register.page.html",
-    styleUrls: ["./register.page.scss"],
+    imports: [
+        ReactiveFormsModule,
+        MatCardModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+    ],
+    templateUrl: "./register.component.html",
+    styleUrls: ["./register.component.scss", "../auth-cards.scss"],
 })
-export class RegisterPage {
+export class Register {
     private router = inject(Router);
     private requestService = inject(RequestService);
 

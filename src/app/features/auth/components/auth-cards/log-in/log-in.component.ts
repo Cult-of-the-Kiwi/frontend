@@ -6,8 +6,14 @@ import {
     FormControl,
 } from "@angular/forms";
 import { Router } from "@angular/router";
-import { HttpMethod, RequestService } from "../../../services/request-service";
-
+import {
+    HttpMethod,
+    RequestService,
+} from "../../../../../services/request-service";
+import { MatCardModule } from "@angular/material/card";
+import { MatFormFieldModule } from "@angular/material/form-field";
+import { MatInputModule } from "@angular/material/input";
+import { MatButtonModule } from "@angular/material/button";
 interface LoginRequestResponse {
     token: string;
     username: string;
@@ -23,11 +29,17 @@ interface LoginRequestBody {
 const errorCtx = "login";
 @Component({
     selector: "log-in",
-    imports: [ReactiveFormsModule],
-    templateUrl: "./log-in.page.html",
-    styleUrls: ["./log-in.page.scss"],
+    imports: [
+        ReactiveFormsModule,
+        MatCardModule,
+        MatFormFieldModule,
+        MatInputModule,
+        MatButtonModule,
+    ],
+    templateUrl: "./log-in.component.html",
+    styleUrls: ["./log-in.component.scss", "../auth-cards.scss"],
 })
-export class LogInPage {
+export class LogIn {
     private router = inject(Router);
     private requestService = inject(RequestService);
 
