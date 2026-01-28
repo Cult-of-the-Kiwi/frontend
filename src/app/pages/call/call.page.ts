@@ -68,6 +68,7 @@ export class CallPage {
 
     private callbacks = {
         onOpen: this.handleOpen.bind(this),
+        onMessage: this.handleMessage.bind(this),
     };
 
     constructor(@Inject(PLATFORM_ID) platformId: object) {
@@ -185,6 +186,27 @@ export class CallPage {
             room_id: this.groupId,
         });
     }
+
+        async handleMessage(data: MessageFormat) {
+        if (!isPlatformBrowser(this.platformId)) return;
+
+        if (data.type === "offer") {
+            await this.peerConnection.setRemoteDescription(
+                new RTCSessionDescription(data),
+            );
+            const answer = await this.peerConnection.createAnswer();
+            await this.peerConnection.setLocalDescription(answer);
+            this.websocketService.send({
+                type: WebSocketMessageType.RTCAnswer,
+                answer,
+            });
+        } else if (data.type === "candidate") {
+            await this.peerConnection.addIceCandidate(
+                new RTCIceCandidate(data.candidate),
+            );
+        }
+    }
+
 
     async toggleCamera() {
         
