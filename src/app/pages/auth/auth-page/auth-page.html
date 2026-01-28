@@ -1,0 +1,17 @@
+
+
+@if (IsLogin()){
+    <log-in></log-in>
+}
+@else {
+    <register></register>
+}
+<div class="switch-auth-container">
+<button class="switch-auth-btn" (click)="changeAuth()">
+  @if (IsLogin()) {
+    Still without account?
+  } @else {
+    I've already have an account
+  }
+</button>
+</div>

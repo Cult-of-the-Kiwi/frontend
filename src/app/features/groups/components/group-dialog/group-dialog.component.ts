@@ -18,7 +18,7 @@ import { MatButtonModule } from "@angular/material/button";
 import {
     HttpMethod,
     RequestService,
-} from "../../../../core/services/request-service";
+} from "../../../../services/request-service";
 
 //This is a generic dialog for the group operations. Yes, OOP entered in the frontend team
 
@@ -45,6 +45,7 @@ export interface GroupDialogInterface {
 })
 export class GroupDialogComponent {
     //For getting the info from who opens it
+    private requestService = inject(RequestService);
     dialogRef = inject(MatDialogRef<GroupDialogComponent>);
     data = inject<GroupDialogInterface>(MAT_DIALOG_DATA);
     private router = inject(Router);
@@ -58,7 +59,6 @@ export class GroupDialogComponent {
     constructor(
         private http: HttpClient,
         @Inject(PLATFORM_ID) private platformId: object,
-        private requestService: RequestService,
     ) {}
 
     async onSubmitGroupDialog(): Promise<void> {
@@ -96,8 +96,6 @@ export class GroupDialogComponent {
             this.router.navigate([
                 this.data.finalRoute ?? "group/" + this.data.groupId,
             ]);
-            //TODO: @AlexGarciaPrada Update this
-            window.location.reload();
         } catch (error) {
             console.log(error);
         }

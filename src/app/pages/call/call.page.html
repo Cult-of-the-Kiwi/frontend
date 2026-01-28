@@ -1,0 +1,28 @@
+<h2>Video Call</h2>
+
+
+<video #localVideo autoplay muted playsinline ></video>
+
+
+<div #remoteMediaContainer></div>
+
+
+
+<div>
+  <button (click)="toggleCamera()">
+    @if(cameraOn()){
+      Close Camera
+    }
+    @else {
+      Open Camera
+    }
+  </button>
+  <button (click)="toggleMic()">
+        @if(micOn()){
+      Close Voice
+    }
+    @else {
+      Open Voice
+    }
+  </button>
+</div>

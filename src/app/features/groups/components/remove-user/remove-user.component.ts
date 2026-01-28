@@ -4,7 +4,8 @@ import {
     GroupDialogComponent,
     GroupDialogInterface,
 } from "../group-dialog/group-dialog.component";
-import { HttpMethod } from "../../../../core/services/request-service";
+import { HttpMethod } from "../../../../services/request-service";
+import { GroupInfoService } from "../../../../services/group-info-service";
 
 @Component({
     selector: "remove-user",
@@ -17,6 +18,7 @@ export class RemoveUserComponent {
     @Input() members: string[] = [];
     @Input() groupId!: string;
     dialog = inject(MatDialog);
+    groupInfo = inject(GroupInfoService);
 
     deleteThisUserIdFromMembers() {
         const user = localStorage.getItem("user");
@@ -33,7 +35,7 @@ export class RemoveUserComponent {
             groupId: this.groupId,
             title: "Select user to remove from the group",
             route: this.groupId + "/remove-user",
-            users: this.members,
+            users: this.groupInfo.getMembersSignal()(),
             httpOperation: HttpMethod.POST,
             uniqueAnswer: true,
             jsonField: "user_id",

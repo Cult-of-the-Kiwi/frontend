@@ -4,11 +4,12 @@ import { CommonModule, isPlatformBrowser } from "@angular/common";
 import {
     GroupDialogComponent,
     GroupDialogInterface,
-} from "../group-dialog/group-dialog.component";
+} from "../../components/group-dialog/group-dialog.component";
 import {
     HttpMethod,
     RequestService,
-} from "../../../../core/services/request-service";
+} from "../../../../services/request-service";
+import { GroupInfoService } from "../../../../services/group-info-service";
 
 const errorCtx = "add-user";
 
@@ -24,6 +25,7 @@ export class AddUserComponent {
     @Input() groupId!: string;
 
     dialog = inject(MatDialog);
+    private groupService = inject(GroupInfoService);
     private platformId = inject(PLATFORM_ID);
     private requestService = inject(RequestService);
 
