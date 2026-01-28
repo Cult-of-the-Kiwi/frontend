@@ -3,6 +3,8 @@ video, audio {
   border: 1px solid black;
   margin: 5px;
   display: block;
+  //THis is for making a mirror
+  transform: rotateY(180deg);
 }
 
 .user-media {

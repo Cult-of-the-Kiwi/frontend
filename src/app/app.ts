@@ -1,11 +1,10 @@
 import { Component } from "@angular/core";
 import { RouterModule } from "@angular/router";
-import { AuthPage } from "./pages/auth/auth-page/auth-page";
 
 @Component({
     selector: "app-root",
     standalone: true,
-    imports: [RouterModule, AuthPage],
+    imports: [RouterModule],
     templateUrl: "./app.html",
     styleUrls: ["./app.scss"],
 })

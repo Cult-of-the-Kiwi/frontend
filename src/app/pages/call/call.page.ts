@@ -4,6 +4,7 @@ import {
     inject,
     Inject,
     PLATFORM_ID,
+    signal,
     ViewChild,
 } from "@angular/core";
 import { ActivatedRoute } from "@angular/router";
@@ -58,8 +59,8 @@ export class CallPage {
     private localStream!: MediaStream;
     private peerConnection!: RTCPeerConnection;
     private remoteStreams = new Map<string, MediaStream>();
-    public cameraOn = false;
-    public micOn = true;
+    public cameraOn = signal<boolean>(true);
+    public micOn = signal<boolean>(true);
 
     private configuration: RTCConfiguration = {
         iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
@@ -67,7 +68,6 @@ export class CallPage {
 
     private callbacks = {
         onOpen: this.handleOpen.bind(this),
-        onMessage: this.handleMessage.bind(this),
     };
 
     constructor(@Inject(PLATFORM_ID) platformId: object) {
@@ -92,32 +92,60 @@ export class CallPage {
         );
     }
 
+    ngOnDestroy() {
+        this.leaveCall();
+    }
+
     async handleOpen() {
-        if (isPlatformBrowser(this.platformId)) {
-            const nav = window.navigator;
-            this.localStream = await nav.mediaDevices.getUserMedia({
-                video: false,
-                audio: true,
+        if (!isPlatformBrowser(this.platformId)) return;
+
+        const nav = window.navigator;
+        this.localStream = new MediaStream();
+
+        try {
+            const videoStream = await nav.mediaDevices.getUserMedia({
+                video: true,
             });
+            videoStream.getVideoTracks().forEach((track) => {
+                this.localStream.addTrack(track);
+                this.cameraOn.set(true);
+            });
+        } catch (e) {
+            console.warn("No hay cámara disponible");
+            this.cameraOn.set(false);
         }
 
-        this.localVideoRef.nativeElement.srcObject = this.localStream;
-        this.localVideoRef.nativeElement.muted = true;
+        try {
+            const audioStream = await nav.mediaDevices.getUserMedia({
+                audio: true,
+            });
+            audioStream.getAudioTracks().forEach((track) => {
+                this.localStream.addTrack(track);
+                this.micOn.set(true);
+            });
+        } catch (e) {
+            console.warn("No hay micrófono disponible");
+            this.micOn.set(false);
+        }
+
+        if (this.localStream.getVideoTracks().length > 0) {
+            this.localVideoRef.nativeElement.srcObject = this.localStream;
+            this.localVideoRef.nativeElement.muted = true;
+        }
 
         this.peerConnection = new RTCPeerConnection(this.configuration);
 
-        this.localStream
-            .getTracks()
-            .forEach((track) =>
-                this.peerConnection.addTrack(track, this.localStream),
-            );
+        this.localStream.getTracks().forEach((track) => {
+            this.peerConnection.addTrack(track, this.localStream);
+        });
 
         let counter = 0;
         this.peerConnection.ontrack = (event) => {
             if (counter < 2) {
-                counter += 1;
+                counter++;
                 return;
             }
+
             const [stream] = event.streams;
             const userId = stream.id;
 
@@ -144,7 +172,6 @@ export class CallPage {
                 );
             }
         };
-
         this.peerConnection.onicecandidate = (event) => {
             if (event.candidate) {
                 this.websocketService.send({
@@ -159,41 +186,82 @@ export class CallPage {
         });
     }
 
-    async handleMessage(data: MessageFormat) {
-        if (!isPlatformBrowser(this.platformId)) return;
+    async toggleCamera() {
+        
+        if (!this.localStream || !this.peerConnection) return;
 
-        if (data.type === "offer") {
-            await this.peerConnection.setRemoteDescription(
-                new RTCSessionDescription(data),
-            );
-            const answer = await this.peerConnection.createAnswer();
-            await this.peerConnection.setLocalDescription(answer);
-            this.websocketService.send({
-                type: WebSocketMessageType.RTCAnswer,
-                answer,
+        const sender = this.peerConnection
+            .getSenders()
+            .find((s) => s.track?.kind === "video");
+
+        if (this.cameraOn()) {
+            sender?.track?.stop();
+            sender?.replaceTrack(null);
+            this.localStream
+                .getVideoTracks()
+                .forEach((t) => this.localStream.removeTrack(t));
+            this.cameraOn.set(false);
+        } else {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: true,
             });
-        } else if (data.type === "candidate") {
-            await this.peerConnection.addIceCandidate(
-                new RTCIceCandidate(data.candidate),
-            );
+            const videoTrack = stream.getVideoTracks()[0];
+            this.localStream.addTrack(videoTrack);
+            sender?.replaceTrack(videoTrack);
+            this.cameraOn.set(true);
         }
     }
 
-    toggleCamera() {
-        if (!this.localStream) return;
-        this.cameraOn = !this.cameraOn;
-        this.localStream
-            .getVideoTracks()
-            .forEach((track) => (track.enabled = this.cameraOn));
-        console.log(this.cameraOn ? "Camera On" : "Camera Off");
+    async toggleMic() {
+        if (!this.localStream || !this.peerConnection) return;
+
+        const sender = this.peerConnection
+            .getSenders()
+            .find((s) => s.track?.kind === "audio");
+
+        if (this.micOn()) {
+            sender?.track?.stop();
+            sender?.replaceTrack(null);
+            this.localStream
+                .getAudioTracks()
+                .forEach((t) => this.localStream.removeTrack(t));
+            this.micOn.set(false);
+        } else {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                audio: true,
+            });
+            const audioTrack = stream.getAudioTracks()[0];
+            this.localStream.addTrack(audioTrack);
+            sender?.replaceTrack(audioTrack);
+            this.micOn.set(true);
+        }
     }
 
-    toggleMic() {
-        if (!this.localStream) return;
-        this.micOn = !this.micOn;
-        this.localStream
-            .getAudioTracks()
-            .forEach((track) => (track.enabled = this.micOn));
-        console.log(this.micOn ? "Voice On" : "Voice Off");
+    //THis will avoid us entering jail
+    leaveCall() {
+        if (this.peerConnection) {
+            this.peerConnection.ontrack = null;
+            this.peerConnection.onicecandidate = null;
+            this.peerConnection.close();
+        }
+
+        if (this.localStream) {
+            this.localStream.getTracks().forEach((track) => track.stop());
+        }
+
+        this.remoteStreams.forEach((stream) => {
+            stream.getTracks().forEach((track) => track.stop());
+        });
+        this.remoteStreams.clear();
+
+        if (this.remoteMediaContainerRef) {
+            this.remoteMediaContainerRef.nativeElement.innerHTML = "";
+        }
+
+        if (this.websocketService) {
+            this.websocketService.disconnect();
+        }
+
+        console.log("Llamada finalizada correctamente");
     }
 }

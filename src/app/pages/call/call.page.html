@@ -1,7 +1,7 @@
-<h2>WebRTC Video Call Example</h2>
+<h2>Video Call</h2>
 
 
-<video #localVideo autoplay muted playsinline></video>
+<video #localVideo autoplay muted playsinline ></video>
 
 
 <div #remoteMediaContainer></div>
@@ -10,9 +10,19 @@
 
 <div>
   <button (click)="toggleCamera()">
-    {{ cameraOn ? "Close Camera" : "Open Camera" }}
+    @if(cameraOn()){
+      Close Camera
+    }
+    @else {
+      Open Camera
+    }
   </button>
   <button (click)="toggleMic()">
-    {{ micOn ? "Close Voice" : "Open Voice" }}
+        @if(micOn()){
+      Close Voice
+    }
+    @else {
+      Open Voice
+    }
   </button>
 </div>
