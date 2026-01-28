@@ -17,6 +17,7 @@ const extension = "/ws/call";
 export enum WebSocketMessageType {
     ConnectToRoom = "connecttoroom",
     RTCAnswer = "rtcanswer",
+    RTCOffer = "rtcoffer",
     RTCCandidate = "rtccandidate",
     Offer = "offer",
     Answer = "answer",
@@ -26,13 +27,17 @@ export enum WebSocketMessageType {
 type MessageFormat =
     | { type: WebSocketMessageType.ConnectToRoom; room_id: string }
     | {
-          type: WebSocketMessageType.RTCCandidate;
-          candidate: RTCIceCandidateInit;
-      }
+        type: WebSocketMessageType.RTCCandidate;
+        candidate: RTCIceCandidateInit;
+    }
     | {
-          type: WebSocketMessageType.RTCAnswer;
-          answer: RTCSessionDescriptionInit;
-      }
+        type: WebSocketMessageType.RTCAnswer;
+        answer: RTCSessionDescriptionInit;
+    }
+    | {
+        type: WebSocketMessageType.RTCOffer;
+        offer: RTCSessionDescriptionInit;
+    }
     | { type: WebSocketMessageType.Offer; sdp: string }
     | { type: WebSocketMessageType.Answer; sdp: string }
     | { type: WebSocketMessageType.Candidate; candidate: RTCIceCandidateInit };
@@ -187,7 +192,7 @@ export class CallPage {
         });
     }
 
-        async handleMessage(data: MessageFormat) {
+    async handleMessage(data: MessageFormat) {
         if (!isPlatformBrowser(this.platformId)) return;
 
         if (data.type === "offer") {
@@ -200,7 +205,13 @@ export class CallPage {
                 type: WebSocketMessageType.RTCAnswer,
                 answer,
             });
-        } else if (data.type === "candidate") {
+        }
+        else if (data.type === "answer") {
+            await this.peerConnection.setRemoteDescription(
+                new RTCSessionDescription(data),
+            );
+        }
+        else if (data.type === "candidate") {
             await this.peerConnection.addIceCandidate(
                 new RTCIceCandidate(data.candidate),
             );
@@ -209,7 +220,7 @@ export class CallPage {
 
 
     async toggleCamera() {
-        
+
         if (!this.localStream || !this.peerConnection) return;
 
         const sender = this.peerConnection
@@ -224,14 +235,21 @@ export class CallPage {
                 .forEach((t) => this.localStream.removeTrack(t));
             this.cameraOn.set(false);
         } else {
-            const stream = await navigator.mediaDevices.getUserMedia({
+            const videoStream = await navigator.mediaDevices.getUserMedia({
                 video: true,
             });
-            const videoTrack = stream.getVideoTracks()[0];
-            this.localStream.addTrack(videoTrack);
-            sender?.replaceTrack(videoTrack);
-            this.cameraOn.set(true);
+            videoStream.getVideoTracks().forEach((track) => {
+                this.localStream.addTrack(track);
+                this.cameraOn.set(true);
+            });
         }
+
+        const offer = await this.peerConnection.createOffer();
+        await this.peerConnection.setLocalDescription(offer);
+        this.websocketService.send({
+            type: WebSocketMessageType.RTCOffer,
+            offer: offer,
+        });
     }
 
     async toggleMic() {
@@ -249,14 +267,21 @@ export class CallPage {
                 .forEach((t) => this.localStream.removeTrack(t));
             this.micOn.set(false);
         } else {
-            const stream = await navigator.mediaDevices.getUserMedia({
+            const audioStream = await navigator.mediaDevices.getUserMedia({
                 audio: true,
             });
-            const audioTrack = stream.getAudioTracks()[0];
-            this.localStream.addTrack(audioTrack);
-            sender?.replaceTrack(audioTrack);
-            this.micOn.set(true);
+            audioStream.getAudioTracks().forEach((track) => {
+                this.localStream.addTrack(track);
+                this.micOn.set(true);
+            });
         }
+
+        const offer = await this.peerConnection.createOffer();
+        await this.peerConnection.setLocalDescription(offer);
+        this.websocketService.send({
+            type: WebSocketMessageType.RTCOffer,
+            offer: offer,
+        });
     }
 
     //THis will avoid us entering jail
